@@ -1,4 +1,4 @@
-﻿// Database.gs — All Sheets read/write operation
+// Database.gs - All Sheets read/write operations
 // Column indexes are 0-based and must match docs/database-schema.md exactly.
 
 var RUNS_COLUMNS = {
@@ -33,29 +33,36 @@ var DOB_COLUMNS = {
   OPERATOR_NOTES: 22, LAB_NOTES: 23
 };
 
-// RUNS: helpers
+// --- RUNS: row mapper ---
+
+// Date objects are not serialisable across google.script.run -- convert to ISO strings.
+function _serializeDate(val) {
+  if (!val || val === '') return '';
+  var d = new Date(val);
+  return isNaN(d.getTime()) ? String(val) : d.toISOString();
+}
 
 function _rowToRun(row) {
   return {
-    RUN_ID:                 row[RUNS_COLUMNS.RUN_ID],
-    WINE:                   row[RUNS_COLUMNS.WINE],
-    VINTAGE:                row[RUNS_COLUMNS.VINTAGE],
-    VINTRACE_ID:            row[RUNS_COLUMNS.VINTRACE_ID],
-    TANK_NUMBERS:           row[RUNS_COLUMNS.TANK_NUMBERS],
-    VOLUME:                 row[RUNS_COLUMNS.VOLUME],
-    BOTTLING_DATE:          row[RUNS_COLUMNS.BOTTLING_DATE],
-    NUM_DAYS:               row[RUNS_COLUMNS.NUM_DAYS],
-    WINEMAKER:              row[RUNS_COLUMNS.WINEMAKER],
-    STATUS:                 row[RUNS_COLUMNS.STATUS],
-    WINEMAKER_APPROVED:     row[RUNS_COLUMNS.WINEMAKER_APPROVED],
-    LAB_APPROVED:           row[RUNS_COLUMNS.LAB_APPROVED],
-    WAREHOUSE_APPROVED:     row[RUNS_COLUMNS.WAREHOUSE_APPROVED],
-    PRODUCTION_START_TIME:  row[RUNS_COLUMNS.PRODUCTION_START_TIME],
-    PRODUCTION_END_TIME:    row[RUNS_COLUMNS.PRODUCTION_END_TIME],
-    NUM_SESSIONS:           row[RUNS_COLUMNS.NUM_SESSIONS],
-    REPORT_LINK:            row[RUNS_COLUMNS.REPORT_LINK],
-    FOLDER_LINK:            row[RUNS_COLUMNS.FOLDER_LINK],
-    CREATED_DATE:           row[RUNS_COLUMNS.CREATED_DATE]
+    RUN_ID:                row[RUNS_COLUMNS.RUN_ID],
+    WINE:                  row[RUNS_COLUMNS.WINE],
+    VINTAGE:               row[RUNS_COLUMNS.VINTAGE],
+    VINTRACE_ID:           row[RUNS_COLUMNS.VINTRACE_ID],
+    TANK_NUMBERS:          row[RUNS_COLUMNS.TANK_NUMBERS],
+    VOLUME:                row[RUNS_COLUMNS.VOLUME],
+    BOTTLING_DATE:         _serializeDate(row[RUNS_COLUMNS.BOTTLING_DATE]),
+    NUM_DAYS:              row[RUNS_COLUMNS.NUM_DAYS],
+    WINEMAKER:             row[RUNS_COLUMNS.WINEMAKER],
+    STATUS:                row[RUNS_COLUMNS.STATUS],
+    WINEMAKER_APPROVED:    row[RUNS_COLUMNS.WINEMAKER_APPROVED],
+    LAB_APPROVED:          row[RUNS_COLUMNS.LAB_APPROVED],
+    WAREHOUSE_APPROVED:    row[RUNS_COLUMNS.WAREHOUSE_APPROVED],
+    PRODUCTION_START_TIME: _serializeDate(row[RUNS_COLUMNS.PRODUCTION_START_TIME]),
+    PRODUCTION_END_TIME:   _serializeDate(row[RUNS_COLUMNS.PRODUCTION_END_TIME]),
+    NUM_SESSIONS:          row[RUNS_COLUMNS.NUM_SESSIONS],
+    REPORT_LINK:           row[RUNS_COLUMNS.REPORT_LINK],
+    FOLDER_LINK:           row[RUNS_COLUMNS.FOLDER_LINK],
+    CREATED_DATE:          _serializeDate(row[RUNS_COLUMNS.CREATED_DATE])
   };
 }
 
@@ -70,7 +77,7 @@ function _rowToSession(row) {
   };
 }
 
-// RUNS: read 
+// --- RUNS: read ---
 
 function getAllRuns() {
   try {
@@ -82,7 +89,9 @@ function getAllRuns() {
         runs.push(_rowToRun(data[i]));
       }
     }
-    return { success: true, data: runs };
+    var result = { success: true, data: runs };
+    Logger.log('getAllRuns returning: ' + JSON.stringify(result));
+    return result;
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -119,9 +128,10 @@ function getRunsByStatus(status) {
   }
 }
 
-// RUNS: write 
+// --- RUNS: write ---
 
-function createRun(runData) {
+// Called as createRunInDb() from RunManager to avoid name collision with RunManager.createRun()
+function createRunInDb(runData) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -164,7 +174,7 @@ function updateRunField(runId, fieldName, value) {
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (data[i][RUNS_COLUMNS.RUN_ID] === runId) {
-        var col = RUNS_COLUMNS[fieldName] + 1; // getRange is 1-indexed
+        var col = RUNS_COLUMNS[fieldName] + 1;
         sheet.getRange(i + 1, col).setValue(value);
         return { success: true };
       }
@@ -181,7 +191,7 @@ function updateRunStatus(runId, status) {
   return updateRunField(runId, 'STATUS', status);
 }
 
-// PRODUCTION SESSIONS 
+// --- PRODUCTION SESSIONS ---
 
 function createSession(runId, dayNumber) {
   var lock = LockService.getScriptLock();
@@ -212,7 +222,6 @@ function closeSession(sessionId) {
         sheet.getRange(i + 1, SESSIONS_COLUMNS.END_TIME + 1).setValue(now);
         sheet.getRange(i + 1, SESSIONS_COLUMNS.STATUS + 1).setValue('Completed');
         var runId = data[i][SESSIONS_COLUMNS.RUN_ID];
-        // Increment NUM_SESSIONS on the parent run
         var runsSheet = getSheet('RUNS');
         var runsData = runsSheet.getDataRange().getValues();
         for (var j = 1; j < runsData.length; j++) {
@@ -265,13 +274,13 @@ function getActiveSession(runId) {
   }
 }
 
-// SPLIT-SUBMISSION PATTERN (applies to both upsertHourlyCheck and upsertDayOfBotCheck)
-// Each check generates two form links — one for Lab, one for Operator.
+// --- SPLIT-SUBMISSION PATTERN ---
+// Each check generates two form links: one for Lab, one for Operator.
 // Each form shows only that role's fields. Both submit to the same function,
-// which merges the data into a single sheet row. First submission creates the row;
-// second finds it and fills in the remaining columns using targeted cell writes only
-// (never a full row overwrite). LockService prevents race conditions if both submit
-// simultaneously. Returns complete:true once both role's name fields are populated.
+// which merges data into a single sheet row. First submission creates the row;
+// second finds it and fills in the remaining columns via targeted cell writes only
+// (never a full row overwrite). LockService prevents race conditions.
+// Returns complete:true once both roles' name fields are populated.
 
 function upsertHourlyCheck(runId, checkHour, role, fieldData) {
   var lock = LockService.getScriptLock();
@@ -280,7 +289,6 @@ function upsertHourlyCheck(runId, checkHour, role, fieldData) {
     var sheet = getSheet('HOURLY BOT CHECK');
     var data = sheet.getDataRange().getValues();
 
-    // Find existing row for this runId + checkHour combination
     var targetRowIndex = -1;
     for (var i = 1; i < data.length; i++) {
       if (data[i][HOURLY_COLUMNS.RUN_ID] === runId &&
@@ -291,22 +299,19 @@ function upsertHourlyCheck(runId, checkHour, role, fieldData) {
     }
 
     if (targetRowIndex === -1) {
-      // First submission — create the row with partial data
       var newRow = new Array(16).fill('');
       newRow[HOURLY_COLUMNS.ENTRY_ID]   = generateEntryId('HC');
       newRow[HOURLY_COLUMNS.RUN_ID]     = runId;
       newRow[HOURLY_COLUMNS.CHECK_HOUR] = checkHour;
       newRow[HOURLY_COLUMNS.TIMESTAMP]  = new Date();
-      _applyHourlyRoleFields(newRow, role, fieldData, true);
+      _applyHourlyRoleFields(newRow, role, fieldData);
       sheet.appendRow(newRow);
       return { success: true, complete: false };
     }
 
-    // Second (or later) submission — targeted update of role-specific columns only
-    var sheetRow = targetRowIndex + 1; // 1-indexed for getRange
+    var sheetRow = targetRowIndex + 1;
     _writeHourlyRoleFields(sheet, sheetRow, role, fieldData);
 
-    // Check completeness: both CHECKED_BY (operator) and LAB_CHECKED_BY must be non-empty
     var updatedData = sheet.getRange(sheetRow, 1, 1, 16).getValues()[0];
     var complete = !!(updatedData[HOURLY_COLUMNS.CHECKED_BY] &&
                       updatedData[HOURLY_COLUMNS.LAB_CHECKED_BY]);
@@ -319,27 +324,26 @@ function upsertHourlyCheck(runId, checkHour, role, fieldData) {
   }
 }
 
-// Applies role fields into an in-memory array (used when building a new row)
-function _applyHourlyRoleFields(row, role, fieldData, isNewRow) {
+function _applyHourlyRoleFields(row, role, fieldData) {
   if (role === 'Operator') {
-    row[HOURLY_COLUMNS.CHECKED_BY]     = fieldData.CHECKED_BY     || '';
-    row[HOURLY_COLUMNS.VOLUME_G]       = fieldData.VOLUME_G       || '';
-    row[HOURLY_COLUMNS.VOLUME_ML]      = fieldData.VOLUME_ML      || '';
-    row[HOURLY_COLUMNS.BOTTLE_DO]      = fieldData.BOTTLE_DO      || '';
-    row[HOURLY_COLUMNS.BOTTLE_DCO2]    = fieldData.BOTTLE_DCO2    || '';
-    row[HOURLY_COLUMNS.INNOTECH_DO_IN] = fieldData.INNOTECH_DO_IN || '';
-    row[HOURLY_COLUMNS.INNOTECH_DO_OUT]= fieldData.INNOTECH_DO_OUT|| '';
-    row[HOURLY_COLUMNS.CAP_TORQUE]     = fieldData.CAP_TORQUE     || '';
-    row[HOURLY_COLUMNS.VELCORIN]       = fieldData.VELCORIN       || '';
-    row[HOURLY_COLUMNS.OPERATOR_NOTES] = fieldData.OPERATOR_NOTES || '';
+    row[HOURLY_COLUMNS.CHECKED_BY]      = fieldData.CHECKED_BY      || '';
+    row[HOURLY_COLUMNS.VOLUME_G]        = fieldData.VOLUME_G        || '';
+    row[HOURLY_COLUMNS.VOLUME_ML]       = fieldData.VOLUME_ML       || '';
+    row[HOURLY_COLUMNS.BOTTLE_DO]       = fieldData.BOTTLE_DO       || '';
+    row[HOURLY_COLUMNS.BOTTLE_DCO2]     = fieldData.BOTTLE_DCO2     || '';
+    row[HOURLY_COLUMNS.INNOTECH_DO_IN]  = fieldData.INNOTECH_DO_IN  || '';
+    row[HOURLY_COLUMNS.INNOTECH_DO_OUT] = fieldData.INNOTECH_DO_OUT || '';
+    row[HOURLY_COLUMNS.CAP_TORQUE]      = fieldData.CAP_TORQUE      || '';
+    row[HOURLY_COLUMNS.VELCORIN]        = fieldData.VELCORIN        || '';
+    row[HOURLY_COLUMNS.OPERATOR_NOTES]  = fieldData.OPERATOR_NOTES  || '';
   } else if (role === 'Lab') {
     row[HOURLY_COLUMNS.LAB_CHECKED_BY] = fieldData.LAB_CHECKED_BY || '';
     row[HOURLY_COLUMNS.LAB_NOTES]      = fieldData.LAB_NOTES      || '';
   }
 }
 
-// Writes role-specific fields directly to the sheet (used for the second submission)
-// for HOURLY BOT CHECK only — see _writeDobRoleFields for DAY OF BOT CHECK.
+// Writes role-specific fields directly to the sheet (second submission path)
+// for HOURLY BOT CHECK only -- see _writeDobRoleFields for DAY OF BOT CHECK.
 function _writeHourlyRoleFields(sheet, sheetRow, role, fieldData) {
   if (role === 'Operator') {
     sheet.getRange(sheetRow, HOURLY_COLUMNS.CHECKED_BY + 1)     .setValue(fieldData.CHECKED_BY      || '');
@@ -358,7 +362,7 @@ function _writeHourlyRoleFields(sheet, sheetRow, role, fieldData) {
   }
 }
 
-// ─── SPLIT-SUBMISSION: DAY OF BOT CHECK ──────────────────────────────────────
+// --- SPLIT-SUBMISSION: DAY OF BOT CHECK ---
 // Lookup key is RUN ID + SESSION ID (column B, added to schema).
 // sessionId is generated by generateSessionId(runId, dayNumber) e.g. 'BigWhite2025-Day1'.
 
@@ -379,7 +383,6 @@ function upsertDayOfBotCheck(runId, sessionId, role, fieldData) {
     }
 
     if (targetRowIndex === -1) {
-      // First submission — create the row with partial data
       var newRow = new Array(24).fill('');
       newRow[DOB_COLUMNS.ENTRY_ID]   = generateEntryId('DOB');
       newRow[DOB_COLUMNS.SESSION_ID] = sessionId;
@@ -390,11 +393,9 @@ function upsertDayOfBotCheck(runId, sessionId, role, fieldData) {
       return { success: true, complete: false };
     }
 
-    // Second submission — targeted update of role-specific columns only
     var sheetRow = targetRowIndex + 1;
     _writeDobRoleFields(sheet, sheetRow, role, fieldData);
 
-    // Complete when both operator (CHECKED_BY) and lab (LAB_CHECKED_BY) are present
     var updatedData = sheet.getRange(sheetRow, 1, 1, 24).getValues()[0];
     var complete = !!(updatedData[DOB_COLUMNS.CHECKED_BY] &&
                       updatedData[DOB_COLUMNS.LAB_CHECKED_BY]);
@@ -409,26 +410,26 @@ function upsertDayOfBotCheck(runId, sessionId, role, fieldData) {
 
 function _applyDobRoleFields(row, role, fieldData) {
   if (role === 'Operator') {
-    row[DOB_COLUMNS.CHECKED_BY]                    = fieldData.CHECKED_BY                    || '';
-    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_NUM]      = fieldData.INNOTECH_NIGHT_CLEAN_NUM      || '';
-    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_COMPLETED]= fieldData.INNOTECH_NIGHT_CLEAN_COMPLETED|| '';
-    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_DATETIME] = fieldData.INNOTECH_NIGHT_CLEAN_DATETIME || '';
-    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_NUM]       = fieldData.INNOTECH_MORN_CLEAN_NUM       || '';
-    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_COMPLETED] = fieldData.INNOTECH_MORN_CLEAN_COMPLETED || '';
-    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_DATETIME]  = fieldData.INNOTECH_MORN_CLEAN_DATETIME  || '';
-    row[DOB_COLUMNS.OPERATOR_APPROVED]             = fieldData.OPERATOR_APPROVED             || '';
-    row[DOB_COLUMNS.OPERATOR_NOTES]                = fieldData.OPERATOR_NOTES                || '';
+    row[DOB_COLUMNS.CHECKED_BY]                     = fieldData.CHECKED_BY                     || '';
+    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_NUM]       = fieldData.INNOTECH_NIGHT_CLEAN_NUM       || '';
+    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_COMPLETED] = fieldData.INNOTECH_NIGHT_CLEAN_COMPLETED || '';
+    row[DOB_COLUMNS.INNOTECH_NIGHT_CLEAN_DATETIME]  = fieldData.INNOTECH_NIGHT_CLEAN_DATETIME  || '';
+    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_NUM]        = fieldData.INNOTECH_MORN_CLEAN_NUM        || '';
+    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_COMPLETED]  = fieldData.INNOTECH_MORN_CLEAN_COMPLETED  || '';
+    row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_DATETIME]   = fieldData.INNOTECH_MORN_CLEAN_DATETIME   || '';
+    row[DOB_COLUMNS.OPERATOR_APPROVED]              = fieldData.OPERATOR_APPROVED              || '';
+    row[DOB_COLUMNS.OPERATOR_NOTES]                 = fieldData.OPERATOR_NOTES                 || '';
   } else if (role === 'Lab') {
-    row[DOB_COLUMNS.LAB_CHECKED_BY]      = fieldData.LAB_CHECKED_BY      || '';
-    row[DOB_COLUMNS.INTEGRITY_TEST_DATE] = fieldData.INTEGRITY_TEST_DATE || '';
-    row[DOB_COLUMNS.INTEGRITY_TEST_RESULT]= fieldData.INTEGRITY_TEST_RESULT|| '';
-    row[DOB_COLUMNS.VELCORIN]            = fieldData.VELCORIN            || '';
-    row[DOB_COLUMNS.LAB_ALC]             = fieldData.LAB_ALC             || '';
-    row[DOB_COLUMNS.LAB_DO]              = fieldData.LAB_DO              || '';
-    row[DOB_COLUMNS.LAB_CO2]             = fieldData.LAB_CO2             || '';
-    row[DOB_COLUMNS.LAB_FILL_HEIGHT]     = fieldData.LAB_FILL_HEIGHT     || '';
-    row[DOB_COLUMNS.LAB_APPROVED]        = fieldData.LAB_APPROVED        || '';
-    row[DOB_COLUMNS.LAB_NOTES]           = fieldData.LAB_NOTES           || '';
+    row[DOB_COLUMNS.LAB_CHECKED_BY]        = fieldData.LAB_CHECKED_BY        || '';
+    row[DOB_COLUMNS.INTEGRITY_TEST_DATE]   = fieldData.INTEGRITY_TEST_DATE   || '';
+    row[DOB_COLUMNS.INTEGRITY_TEST_RESULT] = fieldData.INTEGRITY_TEST_RESULT || '';
+    row[DOB_COLUMNS.VELCORIN]              = fieldData.VELCORIN              || '';
+    row[DOB_COLUMNS.LAB_ALC]               = fieldData.LAB_ALC               || '';
+    row[DOB_COLUMNS.LAB_DO]                = fieldData.LAB_DO                || '';
+    row[DOB_COLUMNS.LAB_CO2]               = fieldData.LAB_CO2               || '';
+    row[DOB_COLUMNS.LAB_FILL_HEIGHT]       = fieldData.LAB_FILL_HEIGHT       || '';
+    row[DOB_COLUMNS.LAB_APPROVED]          = fieldData.LAB_APPROVED          || '';
+    row[DOB_COLUMNS.LAB_NOTES]             = fieldData.LAB_NOTES             || '';
   }
 }
 

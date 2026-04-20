@@ -1,4 +1,4 @@
-﻿// Utils.gs — ID generation, date formatting, session helpers
+// Utils.gs - ID generation, date formatting, session helpers
 
 function generateRunId(wineName, vintage) {
   var base = wineName.replace(/\s+/g, '') + vintage;
