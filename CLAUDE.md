@@ -26,8 +26,32 @@ File storage and report generation use Google Drive.
 - apps-script/Utils.gs — date formatting, ID generation, helpers
 - apps-script/html/ — all client-side HTML, CSS, JS templates
 
-## Database Sheets (in Bottling Master Database Google Sheet)
-RUNS, LAB PRE BOT, WAREHOUSE, DAY BEFORE CHECK, DAY OF BOT CHECK, HOURLY BOT CHECK, STAFF RUN LOG, STAFF DATABASE
+## Database Sheets
+See docs/database-schema.md for complete column definitions and index maps.
+Spreadsheet ID is stored in PropertiesService under key SPREADSHEET_ID.
+There are 9 sheets: RUNS, LAB PRE BOT, WAREHOUSE, DAY BEFORE CHECK, DAY OF BOT CHECK, HOURLY BOT CHECK, PRODUCTION SESSIONS, STAFF RUN LOG, STAFF DATABASE
+
+## Split-Submission Pattern (Critical)
+
+Two forms use a split-submission model where lab and operator submit
+separately but data merges into a single database row:
+
+- HOURLY BOT CHECK — hourly during production
+- DAY OF BOT CHECK — morning of each production session
+
+How it works:
+1. System generates two separate form links per check (one lab, one operator)
+2. First submission creates the row with their fields populated, other fields blank
+3. Second submission finds the existing row by RUN ID + CHECK HOUR (or RUN ID + SESSION ID
+   for day-of) and fills in the remaining fields
+4. Row is considered complete only when both submissions are received
+
+Partial row writes must use updateRunField()-style targeted updates, NOT
+full row overwrites. LockService is mandatory on these writes to prevent
+race conditions if both submit simultaneously.
+
+Notes fields: Both HOURLY BOT CHECK and DAY OF BOT CHECK have separate
+OPERATOR NOTES and LAB NOTES columns — never combine into one field.
 
 ## Status Flow
 Active → Pending Approval → Approved → In Production → (back to Approved) → Completed
