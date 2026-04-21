@@ -64,3 +64,7 @@ Multi-day runs loop: Approved → In Production → Approved → In Production �
 - Return JSON from server functions called by client-side JS via google.script.run
 - Handle errors with try/catch and return {success: false, error: message} objects
 - Use Sessions model for multi-day production (RunID-Day1, RunID-Day2, etc.) — see docs/status-flow.md
+
+## Future Features (not in current sprints)
+- Add Staff page: form to add new entries to STAFF DATABASE sheet
+- Staff management view: edit/deactivate existing staff
