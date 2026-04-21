@@ -9,3 +9,7 @@ Get-ChildItem apps-script -Filter *.gs | ForEach-Object {
 }
 
 -----------------------------------------------------------------
+Get-ChildItem apps-script -Recurse -Include *.gs, *.html | ForEach-Object {
+  $content = [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8)
+  [System.IO.File]::WriteAllText($_.FullName, $content, [System.Text.UTF8Encoding]::new($false))
+}

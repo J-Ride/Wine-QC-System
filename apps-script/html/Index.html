@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -14,7 +14,7 @@
       color: #1a1a1a;
     }
 
-    /* ── Nav ── */
+    /* -- Nav -- */
     nav {
       background: #1e3a2f;
       color: #fff;
@@ -45,7 +45,7 @@
     nav .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
     nav .nav-link.active { background: rgba(255,255,255,0.15); color: #fff; }
 
-    /* ── Main content ── */
+    /* -- Main content -- */
     main { padding: 28px 32px; max-width: 1200px; }
 
     section { display: none; }
@@ -58,7 +58,7 @@
       color: #1a1a1a;
     }
 
-    /* ── Dashboard table ── */
+    /* -- Dashboard table -- */
     .table-container {
       background: #fff;
       border-radius: 8px;
@@ -96,7 +96,7 @@
     tbody tr:hover { background: #f8fafc; }
     td { padding: 12px 16px; vertical-align: middle; }
 
-    /* ── Status badges ── */
+    /* -- Status badges -- */
     .badge {
       display: inline-block;
       padding: 3px 10px;
@@ -111,7 +111,7 @@
     .badge-in-production  { background: #fee2e2; color: #b91c1c; }
     .badge-completed      { background: #f1f5f9; color: #475569; }
 
-    /* ── Buttons ── */
+    /* -- Buttons -- */
     .btn {
       display: inline-block;
       padding: 6px 14px;
@@ -128,7 +128,7 @@
     .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
     .btn-sm { padding: 4px 10px; font-size: 12px; }
 
-    /* ── State messages ── */
+    /* -- State messages -- */
     .state-message {
       padding: 40px;
       text-align: center;
@@ -136,7 +136,7 @@
     }
     .state-message.error { color: #b91c1c; }
 
-    /* ── New Run form ── */
+    /* -- New Run form -- */
     .form-card {
       background: #fff;
       border-radius: 8px;
@@ -175,7 +175,7 @@
 
     .form-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
 
-    /* ── Alerts ── */
+    /* -- Alerts -- */
     .alert {
       padding: 12px 16px;
       border-radius: 6px;
@@ -187,7 +187,7 @@
     .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .alert-error   { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 
-    /* ── Refresh button ── */
+    /* -- Refresh button -- */
     .refresh-btn {
       background: none;
       border: 1px solid #d1d5db;
@@ -205,8 +205,8 @@
 <nav>
   <span class="app-title">Wine QC System</span>
   <div class="nav-links">
-    <button class="nav-link active" onclick="showSection('dashboard')">Dashboard</button>
-    <button class="nav-link" onclick="showSection('new-run')">New Run</button>
+    <button id="nav-dashboard" class="nav-link active" onclick="showSection('dashboard', 'nav-dashboard')">Dashboard</button>
+    <button id="nav-new-run"   class="nav-link"        onclick="showSection('new-run',   'nav-new-run')">New Run</button>
   </div>
 </nav>
 
@@ -277,19 +277,34 @@
     </div>
   </section>
 
+  <!-- Run Detail section -->
+  <section id="run-detail-section">
+    <div id="run-detail-content">
+      <div class="state-message">Loading...</div>
+    </div>
+  </section>
+
 </main>
 
 <script>
-  // ── Navigation ──────────────────────────────────────────────────────────────
+  // -- Navigation --
 
-  function showSection(name) {
+  // navId is the ID of the nav button to mark active; omit for sections with no nav entry (run detail).
+  function showSection(name, navId) {
     document.querySelectorAll('section').forEach(function(s) { s.classList.remove('active'); });
     document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
     document.getElementById(name + '-section').classList.add('active');
-    event.target.classList.add('active');
+    if (navId) {
+      var btn = document.getElementById(navId);
+      if (btn) btn.classList.add('active');
+    }
   }
 
-  // ── Dashboard ───────────────────────────────────────────────────────────────
+  function goToDashboard() {
+    showSection('dashboard', 'nav-dashboard');
+  }
+
+  // -- Dashboard --
 
   function loadDashboard() {
     setDashboardState('loading');
@@ -324,14 +339,14 @@
     countEl.textContent = runs.length + ' run' + (runs.length === 1 ? '' : 's');
 
     var rows = runs.map(function(run) {
-      var date = run.BOTTLING_DATE ? formatDisplayDate(run.BOTTLING_DATE) : '—';
+      var date = run.BOTTLING_DATE ? formatDisplayDate(run.BOTTLING_DATE) : '--';
       return '<tr>' +
         '<td><strong>' + esc(run.RUN_ID) + '</strong></td>' +
         '<td>' + esc(run.WINE) + '</td>' +
         '<td>' + esc(String(run.VINTAGE)) + '</td>' +
         '<td>' + statusBadge(run.STATUS) + '</td>' +
         '<td>' + date + '</td>' +
-        '<td>' + esc(run.WINEMAKER || '—') + '</td>' +
+        '<td>' + esc(run.WINEMAKER || '--') + '</td>' +
         '<td><button class="btn btn-secondary btn-sm" onclick="viewRun(\'' + esc(run.RUN_ID) + '\')">View</button></td>' +
         '</tr>';
     }).join('');
@@ -360,11 +375,31 @@
     }
   }
 
+  // -- Run Detail --
+
   function viewRun(runId) {
-    console.log('View run:', runId);
+    showSection('run-detail', null);
+    document.getElementById('run-detail-content').innerHTML =
+      '<div class="state-message">Loading run ' + esc(runId) + '...</div>';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          document.getElementById('run-detail-content').innerHTML =
+            '<div class="state-message error">Failed to load run: ' +
+            esc(result && result.error ? result.error : 'Unknown error') + '</div>';
+          return;
+        }
+        document.getElementById('run-detail-content').innerHTML = _buildRunDetailHtml(result.data);
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('run-detail-content').innerHTML =
+          '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetRunById(runId);
   }
 
-  // ── New Run form ─────────────────────────────────────────────────────────────
+  // -- New Run form --
 
   function submitNewRun(event) {
     event.preventDefault();
@@ -424,7 +459,7 @@
     el.textContent = '';
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  // -- Helpers --
 
   function statusBadge(status) {
     var classMap = {
@@ -439,10 +474,10 @@
   }
 
   function formatDisplayDate(val) {
-    if (!val) return '—';
+    if (!val) return '--';
     var d = new Date(val);
     if (isNaN(d.getTime())) return String(val);
-    return d.toLocaleDateString('en-CA'); // YYYY-MM-DD, readable and unambiguous
+    return d.toLocaleDateString('en-CA');
   }
 
   function esc(str) {
@@ -454,9 +489,11 @@
       .replace(/'/g, '&#39;');
   }
 
-  // ── Init ─────────────────────────────────────────────────────────────────────
+  // -- Init --
   loadDashboard();
 </script>
+
+<?!= include('html/RunDetail'); ?>
 
 </body>
 </html>

@@ -6,7 +6,8 @@ function setupConfig() {
     SPREADSHEET_ID: '1tkUADcQono8rcHK2INgej-1xLCw-yB-8Rdhh53o2PHk',
     ACTIVE_RUNS_FOLDER_ID: '1ZalPd7BGFa8sBhkwyTJSJ9yCcbxjMnyd',
     COMPLETED_RUNS_FOLDER_ID: '1KeV4gokid2eFFXHqIBetOs6-KWtIzIJI',
-    TEMPLATE_FOLDER_ID: '1ewvus630X-SsDkgUmSqQUkUFy-6oRhNs'
+    TEMPLATE_FOLDER_ID: '1ewvus630X-SsDkgUmSqQUkUFy-6oRhNs',
+    TEMPLATE_FILE_ID: '1VOewzqh1yhDkFg9YnLJcbR7f9ReGDh611SQ3aH4M4LA'    
   });
 }
 

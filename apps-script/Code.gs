@@ -1,9 +1,15 @@
 // Code.gs - Web app entry point and server-side function bridge
 
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('html/Index')
+  return HtmlService.createTemplateFromFile('html/Index')
+    .evaluate()
     .setTitle('Wine QC System')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// Used by <?!= include('html/RunDetail') ?> in Index.html
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 // --- Server functions -- called from client via google.script.run ---
@@ -67,6 +73,22 @@ function serverEndProduction(runId) {
 function serverCompleteRun(runId) {
   try {
     return completeRun(runId);
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function serverPopulateReportSummary(runId) {
+  try {
+    return populateReportSummary(runId);
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function serverArchiveRunFolder(runId) {
+  try {
+    return archiveRunFolder(runId);
   } catch (e) {
     return { success: false, error: e.message };
   }

@@ -26,17 +26,18 @@ function createRun(formData) {
 
     var runId = dbResult.data.RUN_ID;
 
+    // createRunFolder writes FOLDER_LINK and REPORT_LINK to the sheet itself.
+    // If it fails, run creation still succeeds -- surface a warning to the client.
+    var warning = null;
     var folderResult = createRunFolder(runId);
-    if (folderResult.success && folderResult.data) {
-      if (folderResult.data.folderLink !== 'PENDING') {
-        updateRunField(runId, 'FOLDER_LINK', folderResult.data.folderLink);
-      }
-      if (folderResult.data.reportLink !== 'PENDING') {
-        updateRunField(runId, 'REPORT_LINK', folderResult.data.reportLink);
-      }
+    if (!folderResult.success) {
+      warning = 'Drive folder creation failed: ' + folderResult.error;
+      Logger.log('createRun warning for ' + runId + ': ' + warning);
     }
 
-    return { success: true, data: dbResult.data };
+    var response = { success: true, data: dbResult.data };
+    if (warning) response.warning = warning;
+    return response;
   } catch (e) {
     return { success: false, error: e.message };
   }
