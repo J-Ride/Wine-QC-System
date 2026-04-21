@@ -1,0 +1,137 @@
+<script>
+  function renderDayBeforeCheck(runId) {
+    var container = document.getElementById('run-detail-content');
+    container.innerHTML = '<div class="state-message">Loading form...</div>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          container.innerHTML = '<div class="state-message error">Could not load staff: ' + esc((result && result.error) || 'Unknown error') + '</div>';
+          return;
+        }
+        container.innerHTML = _dbcBuild(runId, result.data);
+      })
+      .withFailureHandler(function(err) {
+        container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetStaff();
+  }
+
+  function _dbcBuild(runId, staff) {
+    var today = new Date().toISOString().slice(0, 10);
+    var sec   = '<div class="form-section-title">';
+    var esec  = '</div>';
+    return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
+      '<div class="rd-card" style="max-width:720px">' +
+        '<div class="rd-card-title">Day Before Check</div>' +
+        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
+        '<form id="dbc-form" onsubmit="submitDayBeforeCheck(event, \'' + esc(runId) + '\')" style="margin-top:14px">' +
+
+          sec + 'Basic Info' + esec +
+          '<div class="form-grid">' +
+            '<div class="form-group"><label for="dbc-date">Check Date</label><input type="date" id="dbc-date" name="CHECK_DATE" value="' + today + '" required></div>' +
+            '<div class="form-group"><label for="dbc-by">Checked By</label><select id="dbc-by" name="CHECKED_BY" required>' + _staffOptions(staff, 'Lab') + '</select></div>' +
+            '<div class="form-group"><label for="dbc-tank">Tank Number</label><input type="text" id="dbc-tank" name="TANK_NUMBER"></div>' +
+            '<div class="form-group"><label for="dbc-vol">Volume (L)</label><input type="number" id="dbc-vol" name="VOLUME" step="any"></div>' +
+          '</div>' +
+
+          sec + 'Target Values' + esec +
+          '<div class="form-grid">' +
+            '<div class="form-group"><label for="dbc-tfso2">Target fSO2</label><input type="number" id="dbc-tfso2" name="TARGET_FSO2" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-ttso2">Target Tot SO2</label><input type="number" id="dbc-ttso2" name="TARGET_TOT_SO2" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tdo">Target DO</label><input type="number" id="dbc-tdo" name="TARGET_DO" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tfilt">Target Filt</label><input type="number" id="dbc-tfilt" name="TARGET_FILT" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-ttemp">Target Temp</label><input type="number" id="dbc-ttemp" name="TARGET_TEMP" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tph">Target pH</label><input type="number" id="dbc-tph" name="TARGET_PH" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tta">Target TA</label><input type="number" id="dbc-tta" name="TARGET_TA" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-talc">Target Alc</label><input type="number" id="dbc-talc" name="TARGET_ALC" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tva">Target VA</label><input type="number" id="dbc-tva" name="TARGET_VA" step="any"></div>' +
+          '</div>' +
+
+          sec + 'Actual Values' + esec +
+          '<div class="form-grid">' +
+            '<div class="form-group"><label for="dbc-fso2">fSO2</label><input type="number" id="dbc-fso2" name="FSO2" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-tso2">Tot SO2</label><input type="number" id="dbc-tso2" name="TOT_SO2" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-do">DO</label><input type="number" id="dbc-do" name="DO" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-filt">Filt</label><input type="number" id="dbc-filt" name="FILT" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-temp">Temp</label><input type="number" id="dbc-temp" name="TEMP" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-ph">pH</label><input type="number" id="dbc-ph" name="PH" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-ta">TA</label><input type="number" id="dbc-ta" name="TA" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-alc">Alc</label><input type="number" id="dbc-alc" name="ALC" step="any"></div>' +
+            '<div class="form-group"><label for="dbc-va">VA</label><input type="number" id="dbc-va" name="VA" step="any"></div>' +
+          '</div>' +
+
+          sec + 'Stability' + esec +
+          '<div class="form-grid">' +
+            '<div class="form-group"><label for="dbc-heat">Heat Stable</label><select id="dbc-heat" name="HEAT_STABLE"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
+            '<div class="form-group"><label for="dbc-cold">Cold Stable</label><select id="dbc-cold" name="COLD_STABLE"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
+            '<div class="form-group"><label for="dbc-fso2tgt">Free SO2 In Target</label><select id="dbc-fso2tgt" name="FREE_SO2_IN_TARGET"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
+            '<div class="form-group full-width"><label for="dbc-notes">Notes</label><textarea id="dbc-notes" name="NOTES" rows="2"></textarea></div>' +
+          '</div>' +
+
+          '<div class="form-actions">' +
+            '<button type="submit" id="dbc-submit" class="btn btn-primary">Submit</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
+            '<span id="dbc-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+          '</div>' +
+          '<div id="dbc-error" class="alert alert-error" style="display:none"></div>' +
+        '</form>' +
+      '</div>';
+  }
+
+  function submitDayBeforeCheck(event, runId) {
+    event.preventDefault();
+    var form    = document.getElementById('dbc-form');
+    var btn     = document.getElementById('dbc-submit');
+    var spinner = document.getElementById('dbc-spinner');
+    var errEl   = document.getElementById('dbc-error');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    errEl.style.display   = 'none';
+    var formData = {
+      CHECK_DATE:          form.CHECK_DATE.value,
+      CHECKED_BY:          form.CHECKED_BY.value,
+      TANK_NUMBER:         form.TANK_NUMBER.value,
+      VOLUME:              form.VOLUME.value,
+      TARGET_FSO2:         form.TARGET_FSO2.value,
+      TARGET_TOT_SO2:      form.TARGET_TOT_SO2.value,
+      TARGET_DO:           form.TARGET_DO.value,
+      TARGET_FILT:         form.TARGET_FILT.value,
+      TARGET_TEMP:         form.TARGET_TEMP.value,
+      TARGET_PH:           form.TARGET_PH.value,
+      TARGET_TA:           form.TARGET_TA.value,
+      TARGET_ALC:          form.TARGET_ALC.value,
+      TARGET_VA:           form.TARGET_VA.value,
+      FSO2:                form.FSO2.value,
+      TOT_SO2:             form.TOT_SO2.value,
+      DO:                  form.DO.value,
+      FILT:                form.FILT.value,
+      TEMP:                form.TEMP.value,
+      PH:                  form.PH.value,
+      TA:                  form.TA.value,
+      ALC:                 form.ALC.value,
+      VA:                  form.VA.value,
+      HEAT_STABLE:         form.HEAT_STABLE.value,
+      COLD_STABLE:         form.COLD_STABLE.value,
+      FREE_SO2_IN_TARGET:  form.FREE_SO2_IN_TARGET.value,
+      NOTES:               form.NOTES.value
+    };
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (!result || !result.success) {
+          errEl.textContent   = (result && result.error) || 'Unknown error';
+          errEl.style.display = 'block';
+          return;
+        }
+        viewRun(runId);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        errEl.textContent   = 'Server error: ' + String(err);
+        errEl.style.display = 'block';
+      })
+      .serverSubmitDayBefore(runId, formData);
+  }
+</script>

@@ -1,0 +1,101 @@
+<script>
+  function renderWarehouseCheck(runId) {
+    var container = document.getElementById('run-detail-content');
+    container.innerHTML = '<div class="state-message">Loading form...</div>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          container.innerHTML = '<div class="state-message error">Could not load staff: ' + esc((result && result.error) || 'Unknown error') + '</div>';
+          return;
+        }
+        container.innerHTML = _whBuild(runId, result.data);
+      })
+      .withFailureHandler(function(err) {
+        container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetStaff();
+  }
+
+  function _whBuild(runId, staff) {
+    var today = new Date().toISOString().slice(0, 10);
+    return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
+      '<div class="rd-card" style="max-width:720px">' +
+        '<div class="rd-card-title">Warehouse Check</div>' +
+        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
+        '<div style="font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:5px;padding:8px 12px;margin:10px 0">' +
+          'Submitting this form will automatically set Warehouse Approved to Yes on this run.' +
+        '</div>' +
+        '<form id="wh-form" onsubmit="submitWarehouseCheck(event, \'' + esc(runId) + '\')" style="margin-top:14px">' +
+          '<div class="form-grid">' +
+            '<div class="form-group">' +
+              '<label for="wh-date">Check Date</label>' +
+              '<input type="date" id="wh-date" name="CHECK_DATE" value="' + today + '" required>' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="wh-by">Checked By</label>' +
+              '<select id="wh-by" name="CHECKED_BY" required>' + _staffOptions(staff, 'Warehouse') + '</select>' +
+            '</div>' +
+            '<div class="form-group"><label for="wh-glass-qty">Glass Qty</label><input type="number" id="wh-glass-qty" name="GLASS_QTY" step="1"></div>' +
+            '<div class="form-group"><label for="wh-glass-mold">Glass Mold</label><input type="text" id="wh-glass-mold" name="GLASS_MOLD"></div>' +
+            '<div class="form-group"><label for="wh-cap-qty">Cap Qty</label><input type="number" id="wh-cap-qty" name="CAP_QTY" step="1"></div>' +
+            '<div class="form-group"><label for="wh-cap-info">Cap Info</label><input type="text" id="wh-cap-info" name="CAP_INFO"></div>' +
+            '<div class="form-group"><label for="wh-label-qty">Label Qty</label><input type="number" id="wh-label-qty" name="LABEL_QTY" step="1"></div>' +
+            '<div class="form-group"><label for="wh-label-info">Label Info Confirm</label><input type="text" id="wh-label-info" name="LABEL_INFO_CONFIRM"></div>' +
+            '<div class="form-group"><label for="wh-box">Box Type</label><input type="text" id="wh-box" name="BOX_TYPE"></div>' +
+            '<div class="form-group"><label for="wh-insert">Insert Type</label><input type="text" id="wh-insert" name="INSERT_TYPE"></div>' +
+            '<div class="form-group full-width"><label for="wh-notes">Notes</label><textarea id="wh-notes" name="NOTES" rows="2"></textarea></div>' +
+            '<div class="form-group full-width"><label for="wh-signoff">Sign Off</label><input type="text" id="wh-signoff" name="SIGN_OFF"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button type="submit" id="wh-submit" class="btn btn-primary">Submit</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
+            '<span id="wh-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+          '</div>' +
+          '<div id="wh-error" class="alert alert-error" style="display:none"></div>' +
+        '</form>' +
+      '</div>';
+  }
+
+  function submitWarehouseCheck(event, runId) {
+    event.preventDefault();
+    var form    = document.getElementById('wh-form');
+    var btn     = document.getElementById('wh-submit');
+    var spinner = document.getElementById('wh-spinner');
+    var errEl   = document.getElementById('wh-error');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    errEl.style.display   = 'none';
+    var formData = {
+      CHECK_DATE:          form.CHECK_DATE.value,
+      CHECKED_BY:          form.CHECKED_BY.value,
+      GLASS_QTY:           form.GLASS_QTY.value,
+      GLASS_MOLD:          form.GLASS_MOLD.value,
+      CAP_QTY:             form.CAP_QTY.value,
+      CAP_INFO:            form.CAP_INFO.value,
+      LABEL_QTY:           form.LABEL_QTY.value,
+      LABEL_INFO_CONFIRM:  form.LABEL_INFO_CONFIRM.value,
+      BOX_TYPE:            form.BOX_TYPE.value,
+      INSERT_TYPE:         form.INSERT_TYPE.value,
+      NOTES:               form.NOTES.value,
+      SIGN_OFF:            form.SIGN_OFF.value
+    };
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (!result || !result.success) {
+          errEl.textContent   = (result && result.error) || 'Unknown error';
+          errEl.style.display = 'block';
+          return;
+        }
+        viewRun(runId);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        errEl.textContent   = 'Server error: ' + String(err);
+        errEl.style.display = 'block';
+      })
+      .serverSubmitWarehouse(runId, formData);
+  }
+</script>

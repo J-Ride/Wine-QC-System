@@ -1,0 +1,143 @@
+<script>
+  // runId: the run being checked
+  // role: 'Operator' or 'Lab'
+  // Fetches active session from server to get sessionId and calculate check hour.
+  function renderHourlyCheck(runId, role) {
+    var container = document.getElementById('run-detail-content');
+    container.innerHTML = '<div class="state-message">Loading session data...</div>';
+
+    google.script.run
+      .withSuccessHandler(function(sessionResult) {
+        if (!sessionResult || !sessionResult.success) {
+          container.innerHTML = '<div class="state-message error">Failed to load session: ' + esc((sessionResult && sessionResult.error) || 'Unknown error') + '</div>';
+          return;
+        }
+        var session = sessionResult.data;
+        if (!session) {
+          container.innerHTML = '<div class="state-message error">No active production session found for this run.</div>';
+          return;
+        }
+        var startTime = new Date(session.START_TIME);
+        var checkHour = Math.floor((new Date() - startTime) / 3600000) + 1;
+
+        google.script.run
+          .withSuccessHandler(function(staffResult) {
+            if (!staffResult || !staffResult.success) {
+              container.innerHTML = '<div class="state-message error">Failed to load staff: ' + esc((staffResult && staffResult.error) || 'Unknown error') + '</div>';
+              return;
+            }
+            container.innerHTML = _hcBuild(runId, session.SESSION_ID, checkHour, role, staffResult.data);
+          })
+          .withFailureHandler(function(err) {
+            container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+          })
+          .serverGetStaff();
+      })
+      .withFailureHandler(function(err) {
+        container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetActiveSession(runId);
+  }
+
+  function _hcBuild(runId, sessionId, checkHour, role, staff) {
+    var isOp   = role === 'Operator';
+    var title  = 'Hourly Check -- ' + role;
+    var fields = isOp ? _hcOperatorFields(staff) : _hcLabFields(staff);
+    var submitFn = 'submitHourlyCheck(event, \'' + esc(runId) + '\', \'' + esc(sessionId) + '\', ' + checkHour + ', \'' + esc(role) + '\')';
+    return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
+      '<div class="rd-card" style="max-width:720px">' +
+        '<div class="rd-card-title">' + title + '</div>' +
+        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
+        '<div class="rd-field"><span class="rd-field-label">Session ID</span><span class="rd-field-value">' + esc(sessionId) + '</span></div>' +
+        '<div class="rd-field"><span class="rd-field-label">Check Hour</span><span class="rd-field-value">' + checkHour + '</span></div>' +
+        '<div style="font-size:12px;color:#64748b;margin:8px 0 14px">Split submission: Operator and Lab each fill their own fields separately.</div>' +
+        '<form id="hc-form" onsubmit="' + submitFn + '">' +
+          '<div class="form-grid">' + fields + '</div>' +
+          '<div class="form-actions">' +
+            '<button type="submit" id="hc-submit" class="btn btn-primary">Submit ' + role + ' Fields</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
+            '<span id="hc-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+          '</div>' +
+          '<div id="hc-error" class="alert alert-error" style="display:none"></div>' +
+          '<div id="hc-success" class="alert alert-success" style="display:none"></div>' +
+        '</form>' +
+      '</div>';
+  }
+
+  function _hcOperatorFields(staff) {
+    return '<div class="form-group"><label for="hc-by">Checked By</label><select id="hc-by" name="CHECKED_BY" required>' + _staffOptions(staff, 'Operator') + '</select></div>' +
+      '<div class="form-group"><label for="hc-vol-g">Volume (g)</label><input type="number" id="hc-vol-g" name="VOLUME_G" step="any"></div>' +
+      '<div class="form-group"><label for="hc-vol-ml">Volume (mL)</label><input type="number" id="hc-vol-ml" name="VOLUME_ML" step="any"></div>' +
+      '<div class="form-group"><label for="hc-torque">Cap Torque</label><input type="number" id="hc-torque" name="CAP_TORQUE" step="any"></div>' +
+      '<div class="form-group"><label for="hc-vel">Velcorin (mL/10)</label><input type="number" id="hc-vel" name="VELCORIN" step="any"></div>' +
+      '<div class="form-group full-width"><label for="hc-op-notes">Operator Notes</label><textarea id="hc-op-notes" name="OPERATOR_NOTES" rows="2"></textarea></div>';
+  }
+
+  function _hcLabFields(staff) {
+    return '<div class="form-group"><label for="hc-lab-by">Lab Checked By</label><select id="hc-lab-by" name="LAB_CHECKED_BY" required>' + _staffOptions(staff, 'Lab') + '</select></div>' +
+      '<div class="form-group"><label for="hc-bdo">Bottle DO</label><input type="number" id="hc-bdo" name="BOTTLE_DO" step="any"></div>' +
+      '<div class="form-group"><label for="hc-bdco2">Bottle DCO2</label><input type="number" id="hc-bdco2" name="BOTTLE_DCO2" step="any"></div>' +
+      '<div class="form-group"><label for="hc-doi">Innotech DO In</label><input type="number" id="hc-doi" name="INNOTECH_DO_IN" step="any"></div>' +
+      '<div class="form-group"><label for="hc-doo">Innotech DO Out</label><input type="number" id="hc-doo" name="INNOTECH_DO_OUT" step="any"></div>' +
+      '<div class="form-group full-width"><label for="hc-lab-notes">Lab Notes</label><textarea id="hc-lab-notes" name="LAB_NOTES" rows="2"></textarea></div>';
+  }
+
+  function submitHourlyCheck(event, runId, sessionId, checkHour, role) {
+    event.preventDefault();
+    var form    = document.getElementById('hc-form');
+    var btn     = document.getElementById('hc-submit');
+    var spinner = document.getElementById('hc-spinner');
+    var errEl   = document.getElementById('hc-error');
+    var sucEl   = document.getElementById('hc-success');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    errEl.style.display   = 'none';
+    sucEl.style.display   = 'none';
+
+    var formData = {};
+    if (role === 'Operator') {
+      formData = {
+        CHECKED_BY:     form.CHECKED_BY.value,
+        VOLUME_G:       form.VOLUME_G.value,
+        VOLUME_ML:      form.VOLUME_ML.value,
+        CAP_TORQUE:     form.CAP_TORQUE.value,
+        VELCORIN:       form.VELCORIN.value,
+        OPERATOR_NOTES: form.OPERATOR_NOTES.value
+      };
+    } else {
+      formData = {
+        LAB_CHECKED_BY:  form.LAB_CHECKED_BY.value,
+        BOTTLE_DO:       form.BOTTLE_DO.value,
+        BOTTLE_DCO2:     form.BOTTLE_DCO2.value,
+        INNOTECH_DO_IN:  form.INNOTECH_DO_IN.value,
+        INNOTECH_DO_OUT: form.INNOTECH_DO_OUT.value,
+        LAB_NOTES:       form.LAB_NOTES.value
+      };
+    }
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (!result || !result.success) {
+          errEl.textContent   = (result && result.error) || 'Unknown error';
+          errEl.style.display = 'block';
+          return;
+        }
+        if (result.complete) {
+          viewRun(runId);
+        } else {
+          sucEl.textContent   = role + ' fields saved. Waiting for the other role to submit.';
+          sucEl.style.display = 'block';
+          btn.textContent     = 'Submitted';
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        errEl.textContent   = 'Server error: ' + String(err);
+        errEl.style.display = 'block';
+      })
+      .serverSubmitHourlyCheck(runId, sessionId, checkHour, role, formData);
+  }
+</script>

@@ -1,0 +1,114 @@
+<script>
+  function renderLabPreBot(runId) {
+    var container = document.getElementById('run-detail-content');
+    container.innerHTML = '<div class="state-message">Loading form...</div>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          container.innerHTML = '<div class="state-message error">Could not load staff: ' + esc((result && result.error) || 'Unknown error') + '</div>';
+          return;
+        }
+        container.innerHTML = _lpbBuild(runId, result.data);
+      })
+      .withFailureHandler(function(err) {
+        container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetStaff();
+  }
+
+  function _lpbBuild(runId, staff) {
+    var today = new Date().toISOString().slice(0, 10);
+    return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
+      '<div class="rd-card" style="max-width:720px">' +
+        '<div class="rd-card-title">Lab Pre-Bot Check</div>' +
+        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
+        '<form id="lpb-form" onsubmit="submitLabPreBot(event, \'' + esc(runId) + '\')" style="margin-top:14px">' +
+          '<div class="form-grid">' +
+            '<div class="form-group">' +
+              '<label for="lpb-date">Check Date</label>' +
+              '<input type="date" id="lpb-date" name="CHECK_DATE" value="' + today + '" required>' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="lpb-by">Checked By</label>' +
+              '<select id="lpb-by" name="CHECKED_BY" required>' + _staffOptions(staff, 'Lab') + '</select>' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="lpb-tank">Tank Number</label>' +
+              '<input type="text" id="lpb-tank" name="TANK_NUMBER">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="lpb-vol">Volume (L)</label>' +
+              '<input type="number" id="lpb-vol" name="VOLUME" step="any">' +
+            '</div>' +
+            '<div class="form-group"><label for="lpb-fso2">FSO2</label><input type="number" id="lpb-fso2" name="FSO2" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-tso2">TSO2</label><input type="number" id="lpb-tso2" name="TSO2" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-alc">Alc %</label><input type="number" id="lpb-alc" name="ALC" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-ph">pH</label><input type="number" id="lpb-ph" name="PH" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-ta">TA</label><input type="number" id="lpb-ta" name="TA" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-va">VA</label><input type="number" id="lpb-va" name="VA" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-rs">RS</label><input type="number" id="lpb-rs" name="RS" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-malic">Malic</label><input type="number" id="lpb-malic" name="MALIC" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-do">DO</label><input type="number" id="lpb-do" name="DO" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-dco2">DCO2</label><input type="number" id="lpb-dco2" name="DCO2" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-istc">ISTC</label><input type="number" id="lpb-istc" name="ISTC" step="any"></div>' +
+            '<div class="form-group"><label for="lpb-filt">Filt</label><input type="number" id="lpb-filt" name="FILT" step="any"></div>' +
+            '<div class="form-group full-width"><label for="lpb-notes">Notes</label><textarea id="lpb-notes" name="NOTES" rows="2"></textarea></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button type="submit" id="lpb-submit" class="btn btn-primary">Submit</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
+            '<span id="lpb-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+          '</div>' +
+          '<div id="lpb-error" class="alert alert-error" style="display:none"></div>' +
+        '</form>' +
+      '</div>';
+  }
+
+  function submitLabPreBot(event, runId) {
+    event.preventDefault();
+    var form    = document.getElementById('lpb-form');
+    var btn     = document.getElementById('lpb-submit');
+    var spinner = document.getElementById('lpb-spinner');
+    var errEl   = document.getElementById('lpb-error');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    errEl.style.display   = 'none';
+    var formData = {
+      CHECK_DATE:   form.CHECK_DATE.value,
+      CHECKED_BY:   form.CHECKED_BY.value,
+      TANK_NUMBER:  form.TANK_NUMBER.value,
+      VOLUME:       form.VOLUME.value,
+      FSO2:         form.FSO2.value,
+      TSO2:         form.TSO2.value,
+      ALC:          form.ALC.value,
+      PH:           form.PH.value,
+      TA:           form.TA.value,
+      VA:           form.VA.value,
+      RS:           form.RS.value,
+      MALIC:        form.MALIC.value,
+      DO:           form.DO.value,
+      DCO2:         form.DCO2.value,
+      ISTC:         form.ISTC.value,
+      FILT:         form.FILT.value,
+      NOTES:        form.NOTES.value
+    };
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (!result || !result.success) {
+          errEl.textContent   = (result && result.error) || 'Unknown error';
+          errEl.style.display = 'block';
+          return;
+        }
+        viewRun(runId);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        errEl.textContent   = 'Server error: ' + String(err);
+        errEl.style.display = 'block';
+      })
+      .serverSubmitLabPreBot(runId, formData);
+  }
+</script>

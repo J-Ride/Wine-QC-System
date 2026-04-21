@@ -35,6 +35,11 @@ function createRun(formData) {
       Logger.log('createRun warning for ' + runId + ': ' + warning);
     }
 
+    var emailResult = sendNewRunNotification(runId);
+    if (!emailResult.success) {
+      Logger.log('createRun: new run notification failed for ' + runId + ': ' + emailResult.error);
+    }
+
     var response = { success: true, data: dbResult.data };
     if (warning) response.warning = warning;
     return response;
@@ -51,7 +56,16 @@ function sendForApproval(runId) {
     if (runResult.data.STATUS !== 'Active') {
       return { success: false, error: 'Run must be Active to send for approval. Current status: ' + runResult.data.STATUS };
     }
-    return updateRunStatus(runId, 'Pending Approval');
+
+    var statusResult = updateRunStatus(runId, 'Pending Approval');
+    if (!statusResult.success) return statusResult;
+
+    var emailResult = sendApprovalRequest(runId);
+    if (!emailResult.success) {
+      Logger.log('sendForApproval: approval request email failed for ' + runId + ': ' + emailResult.error);
+    }
+
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -76,6 +90,11 @@ function approveRun(runId, approverRole) {
       var statusResult = updateRunStatus(runId, 'Approved');
       if (!statusResult.success) return statusResult;
       newStatus = 'Approved';
+
+      var emailResult = sendApprovalConfirmation(runId);
+      if (!emailResult.success) {
+        Logger.log('approveRun: confirmation email failed for ' + runId + ': ' + emailResult.error);
+      }
     }
 
     return { success: true, data: { newStatus: newStatus } };
@@ -100,6 +119,8 @@ function startProduction(runId) {
     var sessionResult = createSession(runId, dayNumber);
     if (!sessionResult.success) return sessionResult;
 
+    var sessionId = sessionResult.data.SESSION_ID;
+
     var statusResult = updateRunStatus(runId, 'In Production');
     if (!statusResult.success) return statusResult;
 
@@ -108,7 +129,12 @@ function startProduction(runId) {
       updateRunField(runId, 'PRODUCTION_START_TIME', new Date());
     }
 
-    return { success: true, data: { sessionId: sessionResult.data.SESSION_ID } };
+    var triggerResult = createHourlyTrigger(runId, sessionId);
+    if (!triggerResult.success) {
+      Logger.log('startProduction: trigger creation failed for ' + runId + ': ' + triggerResult.error);
+    }
+
+    return { success: true, data: { sessionId: sessionId } };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -120,7 +146,9 @@ function endProduction(runId) {
     if (!sessionResult.success) return sessionResult;
     if (!sessionResult.data) return { success: false, error: 'No active production session found for run: ' + runId };
 
-    var closeResult = closeSession(sessionResult.data.SESSION_ID);
+    var sessionId = sessionResult.data.SESSION_ID;
+
+    var closeResult = closeSession(sessionId);
     if (!closeResult.success) return closeResult;
 
     updateRunField(runId, 'PRODUCTION_END_TIME', new Date());
@@ -128,7 +156,12 @@ function endProduction(runId) {
     var statusResult = updateRunStatus(runId, 'Approved');
     if (!statusResult.success) return statusResult;
 
-    return { success: true, data: { sessionId: sessionResult.data.SESSION_ID } };
+    var triggerResult = deleteHourlyTrigger(sessionId);
+    if (!triggerResult.success) {
+      Logger.log('endProduction: trigger deletion failed for ' + sessionId + ': ' + triggerResult.error);
+    }
+
+    return { success: true, data: { sessionId: sessionId } };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -153,6 +186,11 @@ function completeRun(runId) {
     if (!statusResult.success) return statusResult;
 
     archiveRunFolder(runId);
+
+    var emailResult = sendRunCompleteNotification(runId);
+    if (!emailResult.success) {
+      Logger.log('completeRun: complete notification email failed for ' + runId + ': ' + emailResult.error);
+    }
 
     return { success: true, data: { runId: runId } };
   } catch (e) {

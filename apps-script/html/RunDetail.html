@@ -15,9 +15,7 @@
   }
   .rd-back:hover { text-decoration: underline; }
 
-  .rd-header {
-    margin-bottom: 24px;
-  }
+  .rd-header { margin-bottom: 24px; }
   .rd-run-id {
     font-size: 26px;
     font-weight: 700;
@@ -73,11 +71,7 @@
   .rd-field-value { color: #1a1a1a; }
   .rd-field-value a { color: #1e3a2f; }
 
-  .rd-action-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .rd-action-group { display: flex; flex-direction: column; gap: 8px; }
   .rd-action-group + .rd-action-group {
     margin-top: 14px;
     padding-top: 14px;
@@ -94,10 +88,10 @@
     text-align: center;
   }
   .btn-action:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-action-primary { background: #1e3a2f; color: #fff; border-color: #1e3a2f; }
+  .btn-action-primary   { background: #1e3a2f; color: #fff; border-color: #1e3a2f; }
   .btn-action-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
-  .btn-action-danger { background: #dc2626; color: #fff; border-color: #dc2626; }
-  .btn-action-muted { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+  .btn-action-danger    { background: #dc2626; color: #fff; border-color: #dc2626; }
+  .btn-action-muted     { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
 
   .rd-spinner {
     display: none;
@@ -141,18 +135,39 @@
     font-size: 12px;
     padding: 3px 0;
   }
-  .rd-approval-done { color: #15803d; font-weight: 600; }
+  .rd-approval-done    { color: #15803d; font-weight: 600; }
   .rd-approval-pending { color: #92400e; }
+
+  /* Form fields rendered inside run-detail-content */
+  select, textarea {
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 100%;
+    outline: none;
+    background: #fff;
+  }
+  select:focus, textarea:focus { border-color: #1e3a2f; }
+  textarea { resize: vertical; min-height: 60px; }
+  .form-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin: 16px 0 6px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
 </style>
 
 <script>
-  // Track current run for refresh after actions
   var _rdCurrentRunId = null;
 
   function renderRunDetail(run) {
     _rdCurrentRunId = run.RUN_ID;
-    var section = document.getElementById('run-detail-section');
-    section.innerHTML = _buildRunDetailHtml(run);
+    document.getElementById('run-detail-content').innerHTML = _buildRunDetailHtml(run);
   }
 
   function _buildRunDetailHtml(run) {
@@ -190,7 +205,6 @@
 
     return '' +
       '<button class="rd-back" onclick="goToDashboard()">&#8592; Back to Dashboard</button>' +
-
       '<div class="rd-header">' +
         '<div class="rd-run-id">' + esc(run.RUN_ID) + '</div>' +
         '<div class="rd-subtitle">' +
@@ -198,14 +212,11 @@
           statusBadge(run.STATUS) +
         '</div>' +
       '</div>' +
-
       '<div class="rd-body">' +
-
         '<div class="rd-card">' +
           '<div class="rd-card-title">Run Details</div>' +
           detailRows +
         '</div>' +
-
         '<div>' +
           '<div class="rd-card">' +
             '<div class="rd-card-title">Actions</div>' +
@@ -214,7 +225,6 @@
             '<div id="rd-action-error" class="rd-action-error"></div>' +
           '</div>' +
         '</div>' +
-
       '</div>';
   }
 
@@ -228,77 +238,73 @@
 
     if (run.STATUS === 'Active') {
       return '<div class="rd-action-group">' +
-        '<button id="send-approval-btn" class="btn-action btn-action-primary" ' +
-          'onclick="doSendForApproval(\'' + esc(runId) + '\')">' +
-          'Send for Approval' +
-        '</button>' +
-      '</div>';
+          '<button id="send-approval-btn" class="btn-action btn-action-primary" ' +
+            'onclick="doSendForApproval(\'' + esc(runId) + '\')">' +
+            'Send for Approval' +
+          '</button>' +
+        '</div>' +
+        '<div class="rd-action-group">' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'lab-pre-bot\',{runId:\'' + esc(runId) + '\'})">Lab Pre-Bot Check</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'warehouse\',{runId:\'' + esc(runId) + '\'})">Warehouse Check</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'staff-log\',{runId:\'' + esc(runId) + '\'})">Staff Log</button>' +
+        '</div>';
     }
 
     if (run.STATUS === 'Pending Approval') {
       var wmDone  = run.WINEMAKER_APPROVED === 'Yes';
       var labDone = run.LAB_APPROVED === 'Yes';
       return '<div class="rd-action-group">' +
-        '<div class="rd-approval-row">' +
-          '<span>Winemaker approval</span>' +
-          (wmDone
-            ? '<span class="rd-approval-done">Done</span>'
-            : '<span class="rd-approval-pending">Pending</span>') +
+          '<div class="rd-approval-row">' +
+            '<span>Winemaker approval</span>' +
+            (wmDone ? '<span class="rd-approval-done">Done</span>' : '<span class="rd-approval-pending">Pending</span>') +
+          '</div>' +
+          '<div class="rd-approval-row">' +
+            '<span>Lab approval</span>' +
+            (labDone ? '<span class="rd-approval-done">Done</span>' : '<span class="rd-approval-pending">Pending</span>') +
+          '</div>' +
         '</div>' +
-        '<div class="rd-approval-row">' +
-          '<span>Lab approval</span>' +
-          (labDone
-            ? '<span class="rd-approval-done">Done</span>'
-            : '<span class="rd-approval-pending">Pending</span>') +
-        '</div>' +
-      '</div>' +
-      '<div class="rd-action-group">' +
-        '<button id="approve-wm-btn" class="btn-action ' +
-          (wmDone ? 'btn-action-muted' : 'btn-action-primary') + '" ' +
-          (wmDone ? 'disabled ' : '') +
-          'onclick="doApproveRun(\'' + esc(runId) + '\', \'WINEMAKER\', \'approve-wm-btn\')">' +
-          'Approve -- Winemaker' +
-        '</button>' +
-        '<button id="approve-lab-btn" class="btn-action ' +
-          (labDone ? 'btn-action-muted' : 'btn-action-secondary') + '" ' +
-          (labDone ? 'disabled ' : '') +
-          'onclick="doApproveRun(\'' + esc(runId) + '\', \'LAB\', \'approve-lab-btn\')">' +
-          'Approve -- Lab Manager' +
-        '</button>' +
-      '</div>';
+        '<div class="rd-action-group">' +
+          '<button id="approve-wm-btn" class="btn-action ' + (wmDone ? 'btn-action-muted' : 'btn-action-primary') + '" ' +
+            (wmDone ? 'disabled ' : '') +
+            'onclick="doApproveRun(\'' + esc(runId) + '\', \'WINEMAKER\', \'approve-wm-btn\')">Approve -- Winemaker</button>' +
+          '<button id="approve-lab-btn" class="btn-action ' + (labDone ? 'btn-action-muted' : 'btn-action-secondary') + '" ' +
+            (labDone ? 'disabled ' : '') +
+            'onclick="doApproveRun(\'' + esc(runId) + '\', \'LAB\', \'approve-lab-btn\')">Approve -- Lab Manager</button>' +
+        '</div>';
     }
 
     if (run.STATUS === 'Approved') {
       var numSessions   = Number(run.NUM_SESSIONS) || 0;
       var canComplete   = numSessions > 0;
+      var nextSessionId = esc(runId + '-Day' + (numSessions + 1));
       return '<div class="rd-action-group">' +
-        '<button id="start-prod-btn" class="btn-action btn-action-primary" ' +
-          'onclick="doStartProduction(\'' + esc(runId) + '\')">' +
-          'Start Production' +
-        '</button>' +
-        '<button id="complete-run-btn" class="btn-action btn-action-secondary" ' +
-          (!canComplete ? 'disabled title="No completed sessions yet" ' : '') +
-          'onclick="doCompleteRun(\'' + esc(runId) + '\')">' +
-          'Run Complete' +
-        '</button>' +
-        (!canComplete
-          ? '<div style="font-size:11px;color:#94a3b8;text-align:center">Complete at least one production session before marking run complete.</div>'
-          : '') +
-      '</div>';
+          '<button id="start-prod-btn" class="btn-action btn-action-primary" ' +
+            'onclick="doStartProduction(\'' + esc(runId) + '\')">Start Production</button>' +
+          '<button id="complete-run-btn" class="btn-action btn-action-secondary" ' +
+            (!canComplete ? 'disabled title="No completed sessions yet" ' : '') +
+            'onclick="doCompleteRun(\'' + esc(runId) + '\')">Run Complete</button>' +
+          (!canComplete ? '<div style="font-size:11px;color:#94a3b8;text-align:center">Complete at least one production session before marking run complete.</div>' : '') +
+        '</div>' +
+        '<div class="rd-action-group">' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'day-before\',{runId:\'' + esc(runId) + '\'})">Day Before Check</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'day-of-check\',{runId:\'' + esc(runId) + '\',sessionId:\'' + nextSessionId + '\',role:\'Operator\'})">Day Of Check -- Operator</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'day-of-check\',{runId:\'' + esc(runId) + '\',sessionId:\'' + nextSessionId + '\',role:\'Lab\'})">Day Of Check -- Lab</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'staff-log\',{runId:\'' + esc(runId) + '\'})">Staff Log</button>' +
+        '</div>';
     }
 
     if (run.STATUS === 'In Production') {
       var startTime = run.PRODUCTION_START_TIME ? formatDisplayDate(run.PRODUCTION_START_TIME) : '--';
-      return '<div class="rd-session-info">' +
-        'Production in progress<br>' +
-        'Started: ' + startTime +
-      '</div>' +
-      '<div class="rd-action-group">' +
-        '<button id="end-prod-btn" class="btn-action btn-action-danger" ' +
-          'onclick="doEndProduction(\'' + esc(runId) + '\')">' +
-          'End Production' +
-        '</button>' +
-      '</div>';
+      return '<div class="rd-session-info">Production in progress<br>Started: ' + startTime + '</div>' +
+        '<div class="rd-action-group">' +
+          '<button id="end-prod-btn" class="btn-action btn-action-danger" ' +
+            'onclick="doEndProduction(\'' + esc(runId) + '\')">End Production</button>' +
+        '</div>' +
+        '<div class="rd-action-group">' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'hourly-check\',{runId:\'' + esc(runId) + '\',role:\'Operator\'})">Hourly Check -- Operator</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'hourly-check\',{runId:\'' + esc(runId) + '\',role:\'Lab\'})">Hourly Check -- Lab</button>' +
+          '<button class="btn-action btn-action-secondary" onclick="showFormSection(\'staff-log\',{runId:\'' + esc(runId) + '\'})">Staff Log</button>' +
+        '</div>';
     }
 
     if (run.STATUS === 'Completed') {
@@ -308,58 +314,65 @@
       var folderLink = (run.FOLDER_LINK && run.FOLDER_LINK !== 'PENDING')
         ? '<br><a href="' + esc(run.FOLDER_LINK) + '" target="_blank" style="color:#15803d">Open Drive Folder</a>'
         : '';
-      return '<div class="rd-complete-msg">' +
-        '<strong>Run Completed</strong>' + reportLink + folderLink +
-      '</div>';
+      return '<div class="rd-complete-msg"><strong>Run Completed</strong>' + reportLink + folderLink + '</div>';
     }
 
     return '<div style="color:#94a3b8;font-size:13px;">No actions available.</div>';
+  }
+
+  // --- Form navigation ---
+
+  // Calls the render function for a check form, replacing run-detail-content.
+  function showFormSection(formName, params) {
+    if (formName === 'lab-pre-bot')  { renderLabPreBot(params.runId);                                  return; }
+    if (formName === 'warehouse')    { renderWarehouseCheck(params.runId);                             return; }
+    if (formName === 'day-before')   { renderDayBeforeCheck(params.runId);                             return; }
+    if (formName === 'day-of-check') { renderDayOfCheck(params.runId, params.sessionId, params.role); return; }
+    if (formName === 'hourly-check') { renderHourlyCheck(params.runId, params.role);                  return; }
+    if (formName === 'staff-log')    { renderStaffRunLog(params.runId);                                return; }
+  }
+
+  // Shared helper used by form build functions to generate <option> elements.
+  function _staffOptions(staff, roleFilter) {
+    var html = '<option value="">-- Select --</option>';
+    if (!staff || !staff.length) return html;
+    for (var i = 0; i < staff.length; i++) {
+      if (!roleFilter || staff[i].role === roleFilter) {
+        html += '<option value="' + esc(staff[i].name) + '">' + esc(staff[i].name) + '</option>';
+      }
+    }
+    return html;
   }
 
   // --- Action handlers ---
 
   function doSendForApproval(runId) {
     _rdAction('send-approval-btn', runId, function(sh, fh) {
-      google.script.run
-        .withSuccessHandler(sh)
-        .withFailureHandler(fh)
-        .serverSendForApproval(runId);
+      google.script.run.withSuccessHandler(sh).withFailureHandler(fh).serverSendForApproval(runId);
     });
   }
 
   function doApproveRun(runId, role, btnId) {
     _rdAction(btnId, runId, function(sh, fh) {
-      google.script.run
-        .withSuccessHandler(sh)
-        .withFailureHandler(fh)
-        .serverApproveRun(runId, role);
+      google.script.run.withSuccessHandler(sh).withFailureHandler(fh).serverApproveRun(runId, role);
     });
   }
 
   function doStartProduction(runId) {
     _rdAction('start-prod-btn', runId, function(sh, fh) {
-      google.script.run
-        .withSuccessHandler(sh)
-        .withFailureHandler(fh)
-        .serverStartProduction(runId);
+      google.script.run.withSuccessHandler(sh).withFailureHandler(fh).serverStartProduction(runId);
     });
   }
 
   function doEndProduction(runId) {
     _rdAction('end-prod-btn', runId, function(sh, fh) {
-      google.script.run
-        .withSuccessHandler(sh)
-        .withFailureHandler(fh)
-        .serverEndProduction(runId);
+      google.script.run.withSuccessHandler(sh).withFailureHandler(fh).serverEndProduction(runId);
     });
   }
 
   function doCompleteRun(runId) {
     _rdAction('complete-run-btn', runId, function(sh, fh) {
-      google.script.run
-        .withSuccessHandler(sh)
-        .withFailureHandler(fh)
-        .serverCompleteRun(runId);
+      google.script.run.withSuccessHandler(sh).withFailureHandler(fh).serverCompleteRun(runId);
     });
   }
 
@@ -368,18 +381,16 @@
     var btn     = document.getElementById(btnId);
     var spinner = document.getElementById('rd-spinner');
     var errEl   = document.getElementById('rd-action-error');
-
     if (btn)     btn.disabled = true;
     if (spinner) spinner.style.display = 'block';
-    if (errEl)   errEl.style.display = 'none';
-
+    if (errEl)   errEl.style.display   = 'none';
     callFn(
       function(result) {
         if (spinner) spinner.style.display = 'none';
         if (!result || !result.success) {
           if (btn) btn.disabled = false;
           if (errEl) {
-            errEl.textContent = (result && result.error) ? result.error : 'Unknown error';
+            errEl.textContent   = (result && result.error) ? result.error : 'Unknown error';
             errEl.style.display = 'block';
           }
           return;
@@ -390,7 +401,7 @@
         if (spinner) spinner.style.display = 'none';
         if (btn) btn.disabled = false;
         if (errEl) {
-          errEl.textContent = 'Server error: ' + String(err);
+          errEl.textContent   = 'Server error: ' + String(err);
           errEl.style.display = 'block';
         }
       }

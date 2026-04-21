@@ -71,8 +71,8 @@ function _rowToSession(row) {
     SESSION_ID: row[SESSIONS_COLUMNS.SESSION_ID],
     RUN_ID:     row[SESSIONS_COLUMNS.RUN_ID],
     DAY_NUM:    row[SESSIONS_COLUMNS.DAY_NUM],
-    START_TIME: row[SESSIONS_COLUMNS.START_TIME],
-    END_TIME:   row[SESSIONS_COLUMNS.END_TIME],
+    START_TIME: _serializeDate(row[SESSIONS_COLUMNS.START_TIME]),
+    END_TIME:   _serializeDate(row[SESSIONS_COLUMNS.END_TIME]),
     STATUS:     row[SESSIONS_COLUMNS.STATUS]
   };
 }
@@ -324,41 +324,42 @@ function upsertHourlyCheck(runId, checkHour, role, fieldData) {
   }
 }
 
+// Operator: fill weight/torque fields. Lab: DO/DCO2/Innotech readings.
 function _applyHourlyRoleFields(row, role, fieldData) {
   if (role === 'Operator') {
-    row[HOURLY_COLUMNS.CHECKED_BY]      = fieldData.CHECKED_BY      || '';
-    row[HOURLY_COLUMNS.VOLUME_G]        = fieldData.VOLUME_G        || '';
-    row[HOURLY_COLUMNS.VOLUME_ML]       = fieldData.VOLUME_ML       || '';
+    row[HOURLY_COLUMNS.CHECKED_BY]     = fieldData.CHECKED_BY     || '';
+    row[HOURLY_COLUMNS.VOLUME_G]       = fieldData.VOLUME_G       || '';
+    row[HOURLY_COLUMNS.VOLUME_ML]      = fieldData.VOLUME_ML      || '';
+    row[HOURLY_COLUMNS.CAP_TORQUE]     = fieldData.CAP_TORQUE     || '';
+    row[HOURLY_COLUMNS.VELCORIN]       = fieldData.VELCORIN       || '';
+    row[HOURLY_COLUMNS.OPERATOR_NOTES] = fieldData.OPERATOR_NOTES || '';
+  } else if (role === 'Lab') {
+    row[HOURLY_COLUMNS.LAB_CHECKED_BY]  = fieldData.LAB_CHECKED_BY  || '';
     row[HOURLY_COLUMNS.BOTTLE_DO]       = fieldData.BOTTLE_DO       || '';
     row[HOURLY_COLUMNS.BOTTLE_DCO2]     = fieldData.BOTTLE_DCO2     || '';
     row[HOURLY_COLUMNS.INNOTECH_DO_IN]  = fieldData.INNOTECH_DO_IN  || '';
     row[HOURLY_COLUMNS.INNOTECH_DO_OUT] = fieldData.INNOTECH_DO_OUT || '';
-    row[HOURLY_COLUMNS.CAP_TORQUE]      = fieldData.CAP_TORQUE      || '';
-    row[HOURLY_COLUMNS.VELCORIN]        = fieldData.VELCORIN        || '';
-    row[HOURLY_COLUMNS.OPERATOR_NOTES]  = fieldData.OPERATOR_NOTES  || '';
-  } else if (role === 'Lab') {
-    row[HOURLY_COLUMNS.LAB_CHECKED_BY] = fieldData.LAB_CHECKED_BY || '';
-    row[HOURLY_COLUMNS.LAB_NOTES]      = fieldData.LAB_NOTES      || '';
+    row[HOURLY_COLUMNS.LAB_NOTES]       = fieldData.LAB_NOTES       || '';
   }
 }
 
-// Writes role-specific fields directly to the sheet (second submission path)
-// for HOURLY BOT CHECK only -- see _writeDobRoleFields for DAY OF BOT CHECK.
+// Writes role-specific fields directly to the sheet (second submission path).
+// Field assignment matches _applyHourlyRoleFields above.
 function _writeHourlyRoleFields(sheet, sheetRow, role, fieldData) {
   if (role === 'Operator') {
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.CHECKED_BY + 1)     .setValue(fieldData.CHECKED_BY      || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_G + 1)       .setValue(fieldData.VOLUME_G        || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_ML + 1)      .setValue(fieldData.VOLUME_ML       || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.CHECKED_BY + 1)    .setValue(fieldData.CHECKED_BY     || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_G + 1)      .setValue(fieldData.VOLUME_G       || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_ML + 1)     .setValue(fieldData.VOLUME_ML      || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.CAP_TORQUE + 1)    .setValue(fieldData.CAP_TORQUE     || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VELCORIN + 1)      .setValue(fieldData.VELCORIN       || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.OPERATOR_NOTES + 1).setValue(fieldData.OPERATOR_NOTES || '');
+  } else if (role === 'Lab') {
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_CHECKED_BY + 1) .setValue(fieldData.LAB_CHECKED_BY  || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DO + 1)      .setValue(fieldData.BOTTLE_DO       || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DCO2 + 1)    .setValue(fieldData.BOTTLE_DCO2     || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.INNOTECH_DO_IN + 1) .setValue(fieldData.INNOTECH_DO_IN  || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.INNOTECH_DO_OUT + 1).setValue(fieldData.INNOTECH_DO_OUT || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.CAP_TORQUE + 1)     .setValue(fieldData.CAP_TORQUE      || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VELCORIN + 1)       .setValue(fieldData.VELCORIN        || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.OPERATOR_NOTES + 1) .setValue(fieldData.OPERATOR_NOTES  || '');
-  } else if (role === 'Lab') {
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_CHECKED_BY + 1).setValue(fieldData.LAB_CHECKED_BY || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_NOTES + 1)     .setValue(fieldData.LAB_NOTES      || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_NOTES + 1)      .setValue(fieldData.LAB_NOTES       || '');
   }
 }
 
@@ -455,5 +456,61 @@ function _writeDobRoleFields(sheet, sheetRow, role, fieldData) {
     sheet.getRange(sheetRow, DOB_COLUMNS.LAB_FILL_HEIGHT + 1)      .setValue(fieldData.LAB_FILL_HEIGHT      || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.LAB_APPROVED + 1)         .setValue(fieldData.LAB_APPROVED         || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.LAB_NOTES + 1)            .setValue(fieldData.LAB_NOTES            || '');
+  }
+}
+
+// --- Generic append helper ---
+
+// Appends a single row (ordered array) to any named sheet.
+// Used by Code.gs server functions for one-off check sheet writes.
+function appendToSheet(sheetName, rowData) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    var sheet = getSheet(sheetName);
+    sheet.appendRow(rowData);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- Row-read helpers for report sync after complete upserts ---
+
+// Returns raw row array for a DAY OF BOT CHECK row identified by runId + sessionId.
+function _getDobRow(runId, sessionId) {
+  try {
+    var sheet = getSheet('DAY OF BOT CHECK');
+    var data  = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][DOB_COLUMNS.RUN_ID] === runId &&
+          data[i][DOB_COLUMNS.SESSION_ID] === sessionId) {
+        return data[i];
+      }
+    }
+    return null;
+  } catch (e) {
+    Logger.log('_getDobRow error: ' + e.message);
+    return null;
+  }
+}
+
+// Returns raw row array for an HOURLY BOT CHECK row identified by runId + checkHour.
+function _getHourlyRow(runId, checkHour) {
+  try {
+    var sheet = getSheet('HOURLY BOT CHECK');
+    var data  = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][HOURLY_COLUMNS.RUN_ID] === runId &&
+          Number(data[i][HOURLY_COLUMNS.CHECK_HOUR]) === Number(checkHour)) {
+        return data[i];
+      }
+    }
+    return null;
+  } catch (e) {
+    Logger.log('_getHourlyRow error: ' + e.message);
+    return null;
   }
 }

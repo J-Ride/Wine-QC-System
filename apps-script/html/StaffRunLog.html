@@ -1,0 +1,98 @@
+<script>
+  function renderStaffRunLog(runId) {
+    var container = document.getElementById('run-detail-content');
+    container.innerHTML = '<div class="state-message">Loading form...</div>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          container.innerHTML = '<div class="state-message error">Could not load staff: ' + esc((result && result.error) || 'Unknown error') + '</div>';
+          return;
+        }
+        container.innerHTML = _srlBuild(runId, result.data);
+      })
+      .withFailureHandler(function(err) {
+        container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetStaff();
+  }
+
+  function _srlBuild(runId, staff) {
+    // Build options including role as data attribute for auto-fill
+    var nameOptions = '<option value="" data-role="">-- Select --</option>';
+    for (var i = 0; i < staff.length; i++) {
+      nameOptions += '<option value="' + esc(staff[i].name) + '" data-role="' + esc(staff[i].role) + '">' +
+        esc(staff[i].name) + ' (' + esc(staff[i].role) + ')' +
+      '</option>';
+    }
+    return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
+      '<div class="rd-card" style="max-width:560px">' +
+        '<div class="rd-card-title">Staff Run Log</div>' +
+        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
+        '<form id="srl-form" onsubmit="submitStaffRunLog(event, \'' + esc(runId) + '\')" style="margin-top:14px">' +
+          '<div class="form-grid">' +
+            '<div class="form-group full-width">' +
+              '<label for="srl-name">Name</label>' +
+              '<select id="srl-name" name="NAME" onchange="_srlAutoFillRole()" required>' + nameOptions + '</select>' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="srl-role">Role</label>' +
+              '<input type="text" id="srl-role" name="ROLE" readonly style="background:#f8fafc;color:#64748b">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="srl-hours">Hours Worked</label>' +
+              '<input type="number" id="srl-hours" name="HOURS_WORKED" step="0.5" min="0" required>' +
+            '</div>' +
+            '<div class="form-group full-width"><label for="srl-notes">Notes</label><textarea id="srl-notes" name="NOTES" rows="2"></textarea></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button type="submit" id="srl-submit" class="btn btn-primary">Submit</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
+            '<span id="srl-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+          '</div>' +
+          '<div id="srl-error" class="alert alert-error" style="display:none"></div>' +
+        '</form>' +
+      '</div>';
+  }
+
+  function _srlAutoFillRole() {
+    var sel     = document.getElementById('srl-name');
+    var roleEl  = document.getElementById('srl-role');
+    var opt     = sel.options[sel.selectedIndex];
+    roleEl.value = opt ? (opt.getAttribute('data-role') || '') : '';
+  }
+
+  function submitStaffRunLog(event, runId) {
+    event.preventDefault();
+    var form    = document.getElementById('srl-form');
+    var btn     = document.getElementById('srl-submit');
+    var spinner = document.getElementById('srl-spinner');
+    var errEl   = document.getElementById('srl-error');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    errEl.style.display   = 'none';
+    var formData = {
+      NAME:          form.NAME.value,
+      ROLE:          form.ROLE.value,
+      HOURS_WORKED:  form.HOURS_WORKED.value,
+      NOTES:         form.NOTES.value
+    };
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (!result || !result.success) {
+          errEl.textContent   = (result && result.error) || 'Unknown error';
+          errEl.style.display = 'block';
+          return;
+        }
+        viewRun(runId);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        errEl.textContent   = 'Server error: ' + String(err);
+        errEl.style.display = 'block';
+      })
+      .serverSubmitStaffRunLog(runId, formData);
+  }
+</script>
