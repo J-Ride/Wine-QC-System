@@ -40,24 +40,37 @@ function populateReportSummary(runId) {
     var run = runResult.data;
 
     if (!run.REPORT_LINK || run.REPORT_LINK === '' || run.REPORT_LINK === 'PENDING') {
+      Logger.log('populateReportSummary: no valid report link for ' + runId + ' (value: ' + run.REPORT_LINK + ')');
       return { success: false, error: 'No report link available for run: ' + runId };
     }
 
+    Logger.log('populateReportSummary: opening ' + run.REPORT_LINK);
     var ss = SpreadsheetApp.openByUrl(run.REPORT_LINK);
     var sheet = ss.getSheetByName('Run Summary');
     if (!sheet) return { success: false, error: 'Run Summary tab not found in report' };
 
-    sheet.getRange('B2').setValue(run.RUN_ID);
-    sheet.getRange('B3').setValue(run.WINE);
-    sheet.getRange('B4').setValue(run.VINTAGE);
-    sheet.getRange('B5').setValue(run.VINTRACE_ID);
-    sheet.getRange('B6').setValue(run.TANK_NUMBERS);
-    sheet.getRange('B7').setValue(run.VOLUME);
-    sheet.getRange('B8').setValue(run.BOTTLING_DATE ? new Date(run.BOTTLING_DATE) : '');
-    sheet.getRange('B9').setValue(run.WINEMAKER);
-    sheet.getRange('B10').setValue(run.STATUS);
-    sheet.getRange('B11').setValue(run.CREATED_DATE ? new Date(run.CREATED_DATE) : '');
+    Logger.log('populateReportSummary: got sheet, writing row 12');
+    sheet.getRange(12, 1, 1, 12).setValues([[
+      run.RUN_ID,
+      run.WINE,
+      run.VINTAGE,
+      run.VINTRACE_ID,
+      run.TANK_NUMBERS,
+      run.VOLUME,
+      run.BOTTLING_DATE ? new Date(run.BOTTLING_DATE) : '',
+      run.WINEMAKER,
+      run.NUM_DAYS,
+      run.STATUS,
+      run.CREATED_DATE ? new Date(run.CREATED_DATE) : '',
+      run.FOLDER_LINK || ''
+    ]]);
 
+    Logger.log('populateReportSummary: writing approvals to E8/F8/G8 -- WM:' + run.WINEMAKER_APPROVED + ' LAB:' + run.LAB_APPROVED + ' WH:' + run.WAREHOUSE_APPROVED);
+    sheet.getRange('E8').setValue(run.WINEMAKER_APPROVED || '');
+    sheet.getRange('F8').setValue(run.LAB_APPROVED       || '');
+    sheet.getRange('G8').setValue(run.WAREHOUSE_APPROVED || '');
+
+    Logger.log('populateReportSummary: complete for ' + runId);
     return { success: true };
   } catch (e) {
     return { success: false, error: e.message };

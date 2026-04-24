@@ -33,6 +33,11 @@ function createRun(formData) {
     if (!folderResult.success) {
       warning = 'Drive folder creation failed: ' + folderResult.error;
       Logger.log('createRun warning for ' + runId + ': ' + warning);
+    } else {
+      var summaryResult = populateReportSummary(runId);
+      if (!summaryResult.success) {
+        Logger.log('createRun: report summary population failed for ' + runId + ': ' + summaryResult.error);
+      }
     }
 
     var emailResult = sendNewRunNotification(runId);
@@ -80,6 +85,13 @@ function approveRun(runId, approverRole) {
     var fieldName = approverRole === 'WINEMAKER' ? 'WINEMAKER_APPROVED' : 'LAB_APPROVED';
     var updateResult = updateRunField(runId, fieldName, 'Yes');
     if (!updateResult.success) return updateResult;
+
+    try {
+      var summaryResult = populateReportSummary(runId);
+      if (!summaryResult.success) Logger.log('approveRun: report summary update failed for ' + runId + ': ' + summaryResult.error);
+    } catch (summaryErr) {
+      Logger.log('approveRun: report summary threw for ' + runId + ': ' + summaryErr.message);
+    }
 
     var runResult = getRunById(runId);
     if (!runResult.success) return runResult;
@@ -153,6 +165,9 @@ function endProduction(runId) {
 
     updateRunField(runId, 'PRODUCTION_END_TIME', new Date());
 
+    // Status returns to Approved so the run can start another production day or be completed.
+    // sendApprovalConfirmation is intentionally NOT called here -- approval email only fires
+    // when both Winemaker and Lab approve via approveRun(), never on endProduction.
     var statusResult = updateRunStatus(runId, 'Approved');
     if (!statusResult.success) return statusResult;
 

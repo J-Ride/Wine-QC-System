@@ -324,22 +324,22 @@ function upsertHourlyCheck(runId, checkHour, role, fieldData) {
   }
 }
 
-// Operator: fill weight/torque fields. Lab: DO/DCO2/Innotech readings.
+// Operator: Innotech readings, torque, velcorin. Lab: volumes and bottle gas measurements.
 function _applyHourlyRoleFields(row, role, fieldData) {
   if (role === 'Operator') {
-    row[HOURLY_COLUMNS.CHECKED_BY]     = fieldData.CHECKED_BY     || '';
-    row[HOURLY_COLUMNS.VOLUME_G]       = fieldData.VOLUME_G       || '';
-    row[HOURLY_COLUMNS.VOLUME_ML]      = fieldData.VOLUME_ML      || '';
-    row[HOURLY_COLUMNS.CAP_TORQUE]     = fieldData.CAP_TORQUE     || '';
-    row[HOURLY_COLUMNS.VELCORIN]       = fieldData.VELCORIN       || '';
-    row[HOURLY_COLUMNS.OPERATOR_NOTES] = fieldData.OPERATOR_NOTES || '';
-  } else if (role === 'Lab') {
-    row[HOURLY_COLUMNS.LAB_CHECKED_BY]  = fieldData.LAB_CHECKED_BY  || '';
-    row[HOURLY_COLUMNS.BOTTLE_DO]       = fieldData.BOTTLE_DO       || '';
-    row[HOURLY_COLUMNS.BOTTLE_DCO2]     = fieldData.BOTTLE_DCO2     || '';
+    row[HOURLY_COLUMNS.CHECKED_BY]      = fieldData.CHECKED_BY      || '';
     row[HOURLY_COLUMNS.INNOTECH_DO_IN]  = fieldData.INNOTECH_DO_IN  || '';
     row[HOURLY_COLUMNS.INNOTECH_DO_OUT] = fieldData.INNOTECH_DO_OUT || '';
-    row[HOURLY_COLUMNS.LAB_NOTES]       = fieldData.LAB_NOTES       || '';
+    row[HOURLY_COLUMNS.CAP_TORQUE]      = fieldData.CAP_TORQUE      || '';
+    row[HOURLY_COLUMNS.VELCORIN]        = fieldData.VELCORIN        || '';
+    row[HOURLY_COLUMNS.OPERATOR_NOTES]  = fieldData.OPERATOR_NOTES  || '';
+  } else if (role === 'Lab') {
+    row[HOURLY_COLUMNS.LAB_CHECKED_BY] = fieldData.LAB_CHECKED_BY || '';
+    row[HOURLY_COLUMNS.VOLUME_G]       = fieldData.VOLUME_G       || '';
+    row[HOURLY_COLUMNS.VOLUME_ML]      = fieldData.VOLUME_ML      || '';
+    row[HOURLY_COLUMNS.BOTTLE_DO]      = fieldData.BOTTLE_DO      || '';
+    row[HOURLY_COLUMNS.BOTTLE_DCO2]    = fieldData.BOTTLE_DCO2    || '';
+    row[HOURLY_COLUMNS.LAB_NOTES]      = fieldData.LAB_NOTES      || '';
   }
 }
 
@@ -347,19 +347,19 @@ function _applyHourlyRoleFields(row, role, fieldData) {
 // Field assignment matches _applyHourlyRoleFields above.
 function _writeHourlyRoleFields(sheet, sheetRow, role, fieldData) {
   if (role === 'Operator') {
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.CHECKED_BY + 1)    .setValue(fieldData.CHECKED_BY     || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_G + 1)      .setValue(fieldData.VOLUME_G       || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_ML + 1)     .setValue(fieldData.VOLUME_ML      || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.CAP_TORQUE + 1)    .setValue(fieldData.CAP_TORQUE     || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.VELCORIN + 1)      .setValue(fieldData.VELCORIN       || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.OPERATOR_NOTES + 1).setValue(fieldData.OPERATOR_NOTES || '');
-  } else if (role === 'Lab') {
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_CHECKED_BY + 1) .setValue(fieldData.LAB_CHECKED_BY  || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DO + 1)      .setValue(fieldData.BOTTLE_DO       || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DCO2 + 1)    .setValue(fieldData.BOTTLE_DCO2     || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.CHECKED_BY + 1)     .setValue(fieldData.CHECKED_BY      || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.INNOTECH_DO_IN + 1) .setValue(fieldData.INNOTECH_DO_IN  || '');
     sheet.getRange(sheetRow, HOURLY_COLUMNS.INNOTECH_DO_OUT + 1).setValue(fieldData.INNOTECH_DO_OUT || '');
-    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_NOTES + 1)      .setValue(fieldData.LAB_NOTES       || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.CAP_TORQUE + 1)     .setValue(fieldData.CAP_TORQUE      || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VELCORIN + 1)       .setValue(fieldData.VELCORIN        || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.OPERATOR_NOTES + 1) .setValue(fieldData.OPERATOR_NOTES  || '');
+  } else if (role === 'Lab') {
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_CHECKED_BY + 1).setValue(fieldData.LAB_CHECKED_BY || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_G + 1)      .setValue(fieldData.VOLUME_G       || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.VOLUME_ML + 1)     .setValue(fieldData.VOLUME_ML      || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DO + 1)     .setValue(fieldData.BOTTLE_DO      || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.BOTTLE_DCO2 + 1)   .setValue(fieldData.BOTTLE_DCO2    || '');
+    sheet.getRange(sheetRow, HOURLY_COLUMNS.LAB_NOTES + 1)     .setValue(fieldData.LAB_NOTES      || '');
   }
 }
 
@@ -418,19 +418,19 @@ function _applyDobRoleFields(row, role, fieldData) {
     row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_NUM]        = fieldData.INNOTECH_MORN_CLEAN_NUM        || '';
     row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_COMPLETED]  = fieldData.INNOTECH_MORN_CLEAN_COMPLETED  || '';
     row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_DATETIME]   = fieldData.INNOTECH_MORN_CLEAN_DATETIME   || '';
+    row[DOB_COLUMNS.INTEGRITY_TEST_DATE]            = fieldData.INTEGRITY_TEST_DATE            || '';
+    row[DOB_COLUMNS.INTEGRITY_TEST_RESULT]          = fieldData.INTEGRITY_TEST_RESULT          || '';
+    row[DOB_COLUMNS.VELCORIN]                       = fieldData.VELCORIN                       || '';
     row[DOB_COLUMNS.OPERATOR_APPROVED]              = fieldData.OPERATOR_APPROVED              || '';
     row[DOB_COLUMNS.OPERATOR_NOTES]                 = fieldData.OPERATOR_NOTES                 || '';
   } else if (role === 'Lab') {
-    row[DOB_COLUMNS.LAB_CHECKED_BY]        = fieldData.LAB_CHECKED_BY        || '';
-    row[DOB_COLUMNS.INTEGRITY_TEST_DATE]   = fieldData.INTEGRITY_TEST_DATE   || '';
-    row[DOB_COLUMNS.INTEGRITY_TEST_RESULT] = fieldData.INTEGRITY_TEST_RESULT || '';
-    row[DOB_COLUMNS.VELCORIN]              = fieldData.VELCORIN              || '';
-    row[DOB_COLUMNS.LAB_ALC]               = fieldData.LAB_ALC               || '';
-    row[DOB_COLUMNS.LAB_DO]                = fieldData.LAB_DO                || '';
-    row[DOB_COLUMNS.LAB_CO2]               = fieldData.LAB_CO2               || '';
-    row[DOB_COLUMNS.LAB_FILL_HEIGHT]       = fieldData.LAB_FILL_HEIGHT       || '';
-    row[DOB_COLUMNS.LAB_APPROVED]          = fieldData.LAB_APPROVED          || '';
-    row[DOB_COLUMNS.LAB_NOTES]             = fieldData.LAB_NOTES             || '';
+    row[DOB_COLUMNS.LAB_CHECKED_BY]  = fieldData.LAB_CHECKED_BY  || '';
+    row[DOB_COLUMNS.LAB_ALC]         = fieldData.LAB_ALC         || '';
+    row[DOB_COLUMNS.LAB_DO]          = fieldData.LAB_DO          || '';
+    row[DOB_COLUMNS.LAB_CO2]         = fieldData.LAB_CO2         || '';
+    row[DOB_COLUMNS.LAB_FILL_HEIGHT] = fieldData.LAB_FILL_HEIGHT || '';
+    row[DOB_COLUMNS.LAB_APPROVED]    = fieldData.LAB_APPROVED    || '';
+    row[DOB_COLUMNS.LAB_NOTES]       = fieldData.LAB_NOTES       || '';
   }
 }
 
@@ -443,19 +443,19 @@ function _writeDobRoleFields(sheet, sheetRow, role, fieldData) {
     sheet.getRange(sheetRow, DOB_COLUMNS.INNOTECH_MORN_CLEAN_NUM + 1)       .setValue(fieldData.INNOTECH_MORN_CLEAN_NUM        || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.INNOTECH_MORN_CLEAN_COMPLETED + 1) .setValue(fieldData.INNOTECH_MORN_CLEAN_COMPLETED  || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.INNOTECH_MORN_CLEAN_DATETIME + 1)  .setValue(fieldData.INNOTECH_MORN_CLEAN_DATETIME   || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.INTEGRITY_TEST_DATE + 1)           .setValue(fieldData.INTEGRITY_TEST_DATE            || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.INTEGRITY_TEST_RESULT + 1)         .setValue(fieldData.INTEGRITY_TEST_RESULT          || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.VELCORIN + 1)                      .setValue(fieldData.VELCORIN                       || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.OPERATOR_APPROVED + 1)             .setValue(fieldData.OPERATOR_APPROVED              || '');
     sheet.getRange(sheetRow, DOB_COLUMNS.OPERATOR_NOTES + 1)                .setValue(fieldData.OPERATOR_NOTES                 || '');
   } else if (role === 'Lab') {
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_CHECKED_BY + 1)      .setValue(fieldData.LAB_CHECKED_BY       || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.INTEGRITY_TEST_DATE + 1)  .setValue(fieldData.INTEGRITY_TEST_DATE  || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.INTEGRITY_TEST_RESULT + 1).setValue(fieldData.INTEGRITY_TEST_RESULT|| '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.VELCORIN + 1)             .setValue(fieldData.VELCORIN             || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_ALC + 1)              .setValue(fieldData.LAB_ALC              || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_DO + 1)               .setValue(fieldData.LAB_DO               || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_CO2 + 1)              .setValue(fieldData.LAB_CO2              || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_FILL_HEIGHT + 1)      .setValue(fieldData.LAB_FILL_HEIGHT      || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_APPROVED + 1)         .setValue(fieldData.LAB_APPROVED         || '');
-    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_NOTES + 1)            .setValue(fieldData.LAB_NOTES            || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_CHECKED_BY + 1) .setValue(fieldData.LAB_CHECKED_BY  || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_ALC + 1)        .setValue(fieldData.LAB_ALC         || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_DO + 1)         .setValue(fieldData.LAB_DO          || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_CO2 + 1)        .setValue(fieldData.LAB_CO2         || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_FILL_HEIGHT + 1).setValue(fieldData.LAB_FILL_HEIGHT || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_APPROVED + 1)   .setValue(fieldData.LAB_APPROVED    || '');
+    sheet.getRange(sheetRow, DOB_COLUMNS.LAB_NOTES + 1)      .setValue(fieldData.LAB_NOTES       || '');
   }
 }
 

@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frind Wine Quality Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:       oklch(97% 0.012 70);
+    --cream-mid:   oklch(93% 0.015 70);
+    --cream-dark:  oklch(88% 0.018 65);
+    --wine:        oklch(32% 0.11 10);
+    --wine-mid:    oklch(42% 0.11 10);
+    --wine-light:  oklch(55% 0.10 10);
+    --gold:        oklch(68% 0.08 75);
+    --gold-light:  oklch(82% 0.06 80);
+    --ink:         oklch(22% 0.03 50);
+    --muted:       oklch(55% 0.02 60);
+    --border:      oklch(86% 0.015 65);
+    --white:       oklch(99% 0.005 70);
+
+    --status-active:     oklch(58% 0.14 145);
+    --status-pending:    oklch(65% 0.12 60);
+    --status-approved:   oklch(50% 0.12 250);
+    --status-production: oklch(55% 0.11 10);
+    --status-completed:  oklch(48% 0.06 200);
+
+    --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.06), 0 1px 2px oklch(0% 0 0 / 0.04);
+    --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.08), 0 2px 4px oklch(0% 0 0 / 0.04);
+    --shadow-lg: 0 16px 40px oklch(0% 0 0 / 0.12), 0 4px 12px oklch(0% 0 0 / 0.06);
+  }
+
+  html, body { height: 100%; background: var(--cream); color: var(--ink); }
+  body { font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.5; }
+  #root { height: 100%; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--wine);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px oklch(0% 0 0 / 0.18);
+    position: relative;
+    z-index: 10;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+  }
+  .header-logo {
+    height: 40px;
+    width: auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .header-logo img { height: 40px; width: auto; object-fit: contain; }
+  .header-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .header-title span { color: var(--gold-light); font-style: italic; }
+  .header-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+  }
+  .nav-btn.ghost {
+    background: transparent;
+    color: oklch(85% 0.015 70);
+    border-color: transparent;
+  }
+  .nav-btn.ghost:hover {
+    background: oklch(100% 0 0 / 0.08);
+    color: var(--cream);
+  }
+  .nav-btn.ghost.active {
+    background: oklch(100% 0 0 / 0.12);
+    color: var(--cream);
+    border-color: oklch(100% 0 0 / 0.15);
+  }
+  .nav-btn.primary {
+    background: var(--gold);
+    color: var(--wine);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+  .nav-btn.primary:hover {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+
+  /* ── DASHBOARD ── */
+  .dashboard { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .dashboard-header {
+    padding: 28px 32px 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--cream);
+  }
+  .dashboard-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+  .dashboard-header h1 em { font-style: italic; color: var(--wine-light); }
+  .dashboard-meta {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── KANBAN ── */
+  .kanban-wrap {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 24px 32px 28px;
+  }
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+    height: 100%;
+  }
+  .kanban-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ── MOBILE COLUMN TABS ── */
+  .col-tabs {
+    display: none;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 0 16px 12px;
+    scrollbar-width: none;
+  }
+  .col-tabs::-webkit-scrollbar { display: none; }
+  .col-tab {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .col-tab.active {
+    border-color: currentColor;
+    font-weight: 600;
+  }
+  .col-tab-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .col-tab-count {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  /* ── TABLET: 3-col scroll with snap ── */
+  @media (max-width: 1024px) and (min-width: 640px) {
+    .kanban-wrap {
+      padding: 20px 20px 24px;
+      scroll-snap-type: x mandatory;
+    }
+    .kanban {
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .kanban-col {
+      scroll-snap-align: start;
+    }
+  }
+
+  /* ── MOBILE: single column, tab switcher ── */
+  @media (max-width: 639px) {
+    .kanban-wrap {
+      padding: 0 0 16px;
+      overflow-x: hidden;
+      overflow-y: hidden;
+    }
+    .kanban {
+      display: block;
+      height: 100%;
+    }
+    .kanban-col {
+      display: none;
+      height: 100%;
+      padding: 0 16px 16px;
+    }
+    .kanban-col.mobile-active {
+      display: flex;
+    }
+    .col-tabs {
+      display: flex;
+      padding: 0 16px 12px;
+    }
+    .dashboard-header {
+      padding: 16px 16px 12px;
+    }
+    .dashboard-header h1 {
+      font-size: 22px;
+    }
+  }
+
+  /* ── HEADER RESPONSIVE ── */
+  @media (max-width: 639px) {
+    .header {
+      padding: 0 16px;
+      height: 56px;
+      gap: 12px;
+    }
+    .header-title {
+      font-size: 16px;
+    }
+    .nav-btn {
+      font-size: 12px;
+      padding: 7px 14px;
+    }
+  }
+  .kanban-col-header {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+  }
+  .kanban-col-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--cream-mid);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .col-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .kanban-col-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    flex: 1;
+  }
+  .col-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--cream-dark);
+    border-radius: 20px;
+    padding: 1px 8px;
+  }
+  .kanban-col-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .kanban-col-body::-webkit-scrollbar { width: 4px; }
+  .kanban-col-body::-webkit-scrollbar-track { background: transparent; }
+  .kanban-col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── RUN CARD ── */
+  .run-card {
+    background: var(--white);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .run-card:hover {
+    border-color: var(--gold);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .run-card-id {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .run-card-wine {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .run-card-vintage {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .run-card-divider {
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 10px;
+  }
+  .run-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .run-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .run-card-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .run-card-value {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .run-card-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .status-pill {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-col {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    padding: 20px;
+    text-align: center;
+  }
+  .empty-col-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .empty-col-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── NEW RUN FORM ── */
+  .form-page {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 40px 24px 60px;
+  }
+  .form-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    width: 100%;
+    max-width: 680px;
+    overflow: hidden;
+  }
+  .form-card-header {
+    background: var(--wine);
+    padding: 28px 36px;
+  }
+  .form-card-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--cream);
+    letter-spacing: 0.01em;
+  }
+  .form-card-header h2 em { color: var(--gold-light); font-style: italic; }
+  .form-card-header p {
+    font-size: 13px;
+    color: oklch(78% 0.02 70);
+    margin-top: 4px;
+  }
+  .form-body { padding: 32px 36px 36px; }
+  .form-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--wine);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .form-section-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 16px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field.span2 { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--wine);
+  }
+  .form-label span { color: var(--gold); margin-left: 2px; }
+  .form-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--ink);
+    transition: all 0.15s ease;
+    outline: none;
+    width: 100%;
+  }
+  .form-input::placeholder { color: var(--muted); font-weight: 300; }
+  .form-input:focus {
+    border-color: var(--gold);
+    background: var(--white);
+    box-shadow: 0 0 0 3px oklch(68% 0.08 75 / 0.12);
+  }
+  .form-input.error { border-color: oklch(55% 0.18 20); }
+  .form-error { font-size: 11px; color: oklch(50% 0.18 20); margin-top: 2px; }
+  .form-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 11px 24px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--ink); }
+  .btn-primary {
+    background: var(--wine);
+    color: var(--cream);
+  }
+  .btn-primary:hover { background: var(--wine-mid); }
+  .btn-gold {
+    background: var(--gold);
+    color: var(--wine);
+  }
+  .btn-gold:hover { background: var(--gold-light); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: oklch(10% 0.04 10 / 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+  }
+  .modal {
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 580px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+  }
+  .modal-header {
+    background: var(--wine);
+    padding: 24px 28px;
+    border-radius: 14px 14px 0 0;
+    position: relative;
+  }
+  .modal-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .modal-run-id {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 4px;
+  }
+  .modal-wine-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--cream);
+    line-height: 1.1;
+  }
+  .modal-vintage {
+    font-size: 14px;
+    color: oklch(78% 0.02 70);
+    margin-top: 2px;
+  }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid oklch(100% 0 0 / 0.2);
+    background: oklch(100% 0 0 / 0.08);
+    color: var(--cream);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .modal-close:hover { background: oklch(100% 0 0 / 0.16); }
+  .modal-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid oklch(100% 0 0 / 0.2);
+    background: oklch(100% 0 0 / 0.08);
+  }
+  .modal-status-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .modal-body { padding: 24px 28px 28px; }
+  .modal-section {
+    margin-bottom: 22px;
+  }
+  .modal-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .modal-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .modal-detail-cell {
+    padding: 12px 14px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-detail-cell:nth-last-child(1),
+  .modal-detail-cell:nth-last-child(2) { border-bottom: none; }
+  .modal-detail-cell-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .modal-detail-cell-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .modal-actions {
+    padding: 0 28px 24px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .modal-btn-section {
+    padding: 14px 28px 10px;
+  }
+  .modal-btn-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .modal-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .btn-form {
+    background: var(--cream);
+    color: var(--wine);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+  .btn-form:hover { background: var(--cream-dark); border-color: var(--wine-light); }
+  .btn-action {
+    background: var(--wine);
+    color: var(--cream);
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+  .btn-action:hover { background: var(--wine-mid); }
+  .btn-approve {
+    background: oklch(40% 0.13 145);
+    color: #fff;
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+  .btn-approve:hover { background: oklch(35% 0.13 145); }
+  .btn-warn {
+    background: oklch(55% 0.12 55);
+    color: #fff;
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+  .btn-warn:hover { background: oklch(50% 0.12 55); }
+
+  /* ── FORM MODAL ── */
+  .form-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: oklch(10% 0.04 10 / 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 24px;
+    backdrop-filter: blur(3px);
+  }
+  .form-modal {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .form-modal-header {
+    background: var(--wine);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .form-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--cream);
+  }
+  .form-modal-subtitle {
+    font-size: 11px;
+    color: oklch(78% 0.02 70);
+    margin-top: 3px;
+  }
+  .form-modal-body {
+    padding: 24px;
+  }
+  .form-modal-placeholder {
+    background: var(--cream);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .form-modal-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .modal-divider { height: 1px; background: var(--border); margin: 0 28px 20px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--wine);
+    color: var(--cream);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 200;
+    animation: slideUp 0.25s ease;
+  }
+  .toast-icon { color: var(--gold); font-size: 16px; }
+  @keyframes slideUp {
+    from { transform: translateY(12px); opacity: 0; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+
+  /* ── TWEAKS PANEL ── */
+  .tweaks-panel {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 18px 20px;
+    z-index: 150;
+    width: 260px;
+    display: none;
+  }
+  .tweaks-panel.open { display: block; }
+  .tweaks-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--wine);
+    margin-bottom: 14px;
+  }
+  .tweak-row { margin-bottom: 12px; }
+  .tweak-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tweak-select {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* scrollbar */
+  .form-page::-webkit-scrollbar { width: 6px; }
+  .form-page::-webkit-scrollbar-track { background: transparent; }
+  .form-page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+<meta name="ext-resource-dependency" content="uploads/logo.png" data-resource-id="logoImg" />
+</head>
+<body>
+<div id="root"></div>
+<template id="__bundler_thumbnail" data-bg-color="#3a1a1a">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="80" fill="#3a1a1a"/>
+    <!-- Header bar -->
+    <rect x="0" y="0" width="120" height="14" fill="#2a1010"/>
+    <!-- Logo circle placeholder -->
+    <circle cx="10" cy="7" r="4" fill="#b8960c" opacity="0.8"/>
+    <!-- Title text placeholder -->
+    <rect x="17" y="5" width="40" height="3" rx="1.5" fill="#c8a020" opacity="0.7"/>
+    <!-- Kanban columns -->
+    <rect x="4" y="18" width="20" height="56" rx="3" fill="#4a2a2a" opacity="0.8"/>
+    <rect x="27" y="18" width="20" height="56" rx="3" fill="#4a2a2a" opacity="0.8"/>
+    <rect x="50" y="18" width="20" height="56" rx="3" fill="#4a2a2a" opacity="0.8"/>
+    <rect x="73" y="18" width="20" height="56" rx="3" fill="#4a2a2a" opacity="0.8"/>
+    <rect x="96" y="18" width="20" height="56" rx="3" fill="#4a2a2a" opacity="0.8"/>
+    <!-- Column header dots -->
+    <rect x="7" y="21" width="14" height="3" rx="1.5" fill="#3a6abf" opacity="0.9"/>
+    <rect x="30" y="21" width="14" height="3" rx="1.5" fill="#b8860c" opacity="0.9"/>
+    <rect x="53" y="21" width="14" height="3" rx="1.5" fill="#2a7048" opacity="0.9"/>
+    <rect x="76" y="21" width="14" height="3" rx="1.5" fill="#8b2020" opacity="0.9"/>
+    <rect x="99" y="21" width="14" height="3" rx="1.5" fill="#6a6a6a" opacity="0.9"/>
+    <!-- Cards -->
+    <rect x="6" y="27" width="16" height="18" rx="2" fill="#f5f0e8" opacity="0.9"/>
+    <rect x="29" y="27" width="16" height="18" rx="2" fill="#f5f0e8" opacity="0.9"/>
+    <rect x="52" y="27" width="16" height="18" rx="2" fill="#f5f0e8" opacity="0.9"/>
+    <rect x="75" y="27" width="16" height="18" rx="2" fill="#f5f0e8" opacity="0.9"/>
+    <rect x="98" y="27" width="16" height="18" rx="2" fill="#f5f0e8" opacity="0.9"/>
+  </svg>
+</template>
+
+<script type="text/babel">
+
+
+
+
+const { useState, useEffect, useRef } = React;
+
+// ── helpers ──────────────────────────────────────────
+const STATUS_CONFIG = {
+  active: { label: 'Active', color: 'oklch(42% 0.13 250)', bg: 'oklch(95% 0.04 250)', dot: 'oklch(48% 0.13 250)' },
+  pending: { label: 'Pending Approval', color: 'oklch(58% 0.12 55)', bg: 'oklch(96% 0.04 70)', dot: 'oklch(60% 0.13 55)' },
+  approved: { label: 'Approved', color: 'oklch(40% 0.13 145)', bg: 'oklch(95% 0.04 145)', dot: 'oklch(46% 0.14 145)' },
+  production: { label: 'In Production', color: 'oklch(38% 0.09 10)', bg: 'oklch(95% 0.03 20)', dot: 'oklch(52% 0.11 10)' },
+  completed: { label: 'Completed', color: 'oklch(50% 0.01 220)', bg: 'oklch(94% 0.005 220)', dot: 'oklch(62% 0.01 220)' }
+};
+
+const COLUMNS = [
+{ id: 'active', label: 'Active', dot: 'oklch(48% 0.13 250)' },
+{ id: 'pending', label: 'Pending Approval', dot: 'oklch(60% 0.13 55)' },
+{ id: 'approved', label: 'Approved', dot: 'oklch(46% 0.14 145)' },
+{ id: 'production', label: 'In Production', dot: 'oklch(52% 0.11 10)' },
+{ id: 'completed', label: 'Completed', dot: 'oklch(62% 0.01 220)' }];
+
+
+function genRunId(runs) {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const num = String(runs.length + 1).padStart(3, '0');
+  return `RUN-${year}-${num}`;
+}
+
+const SEED_RUNS = [
+{ id: 'RUN-25-001', wine: 'Big White', vintage: '2024', vintraceId: 'VT-1234', tanks: 'T1, T2', volume: '10,000 L', bottlingDate: '15-04-2025', days: '2', winemaker: 'Jane Smith', status: 'active', createdDate: '10-04-2025', winemakerApproved: 'no', labApproved: 'yes', warehouseApproved: 'no', sessionsCompleted: 1, reportUrl: '', driveFolderUrl: '' },
+{ id: 'RUN-25-002', wine: 'Reserve Pinot Noir', vintage: '2023', vintraceId: 'VT-1189', tanks: 'T5', volume: '4,500 L', bottlingDate: '18-04-2025', days: '1', winemaker: 'Marcus Lund', status: 'pending', createdDate: '12-04-2025', winemakerApproved: 'yes', labApproved: 'yes', warehouseApproved: 'no', sessionsCompleted: 2, reportUrl: 'https://example.com/report/RUN-25-002', driveFolderUrl: 'https://drive.google.com/drive/folders/example2' },
+{ id: 'RUN-25-003', wine: 'Rosé de Provence', vintage: '2024', vintraceId: 'VT-1302', tanks: 'T3, T4', volume: '8,200 L', bottlingDate: '20-04-2025', days: '2', winemaker: 'Jane Smith', status: 'approved', createdDate: '14-04-2025', winemakerApproved: 'yes', labApproved: 'yes', warehouseApproved: 'yes', sessionsCompleted: 2, reportUrl: 'https://example.com/report/RUN-25-003', driveFolderUrl: 'https://drive.google.com/drive/folders/example3' },
+{ id: 'RUN-25-004', wine: 'Old Vine Grenache', vintage: '2022', vintraceId: 'VT-0998', tanks: 'T6', volume: '2,800 L', bottlingDate: '12-04-2025', days: '1', winemaker: 'Sofia Reyes', status: 'production', createdDate: '08-04-2025', winemakerApproved: 'yes', labApproved: 'yes', warehouseApproved: 'yes', sessionsCompleted: 1, reportUrl: 'https://example.com/report/RUN-25-004', driveFolderUrl: 'https://drive.google.com/drive/folders/example4' },
+{ id: 'RUN-25-005', wine: 'Chardonnay Estate', vintage: '2024', vintraceId: 'VT-1410', tanks: 'T1', volume: '6,000 L', bottlingDate: '05-04-2025', days: '2', winemaker: 'Marcus Lund', status: 'completed', createdDate: '01-04-2025', winemakerApproved: 'yes', labApproved: 'yes', warehouseApproved: 'yes', sessionsCompleted: 3, reportUrl: 'https://example.com/report/RUN-25-005', driveFolderUrl: 'https://drive.google.com/drive/folders/example5' }];
+
+
+// ── StatusPill ────────────────────────────────────────
+function StatusPill({ status, size = 'sm', dynStatus }) {
+  const cfg = (dynStatus || STATUS_CONFIG)[status] || (dynStatus || STATUS_CONFIG).active;
+  return (
+    <span className="status-pill" style={{
+      background: cfg.bg,
+      color: cfg.color,
+      fontSize: size === 'sm' ? '10px' : '12px',
+      padding: size === 'sm' ? '3px 8px' : '5px 12px'
+    }}>
+      {cfg.label}
+    </span>);
+}
+
+// ── RunCard ───────────────────────────────────────────
+function RunCard({ run, onClick, dynStatus, cardTitleColor }) {
+  return (
+    <div className="run-card" onClick={() => onClick(run)}>
+      <div className="run-card-id">{run.id}</div>
+      <div className="run-card-wine" style={{ color: cardTitleColor || 'var(--ink)' }}>{run.wine}</div>
+      <div className="run-card-vintage">{run.vintage}</div>
+      <div className="run-card-divider" />
+      <div className="run-card-meta">
+        <div className="run-card-row">
+          <span className="run-card-label">Bottling</span>
+          <span className="run-card-value">{run.bottlingDate}</span>
+        </div>
+        <div className="run-card-row">
+          <span className="run-card-label">Winemaker</span>
+          <span className="run-card-value">{run.winemaker.split(' ')[0]}</span>
+        </div>
+        <div className="run-card-row">
+          <span className="run-card-label">Volume</span>
+          <span className="run-card-value">{run.volume}</span>
+        </div>
+      </div>
+      <div className="run-card-footer">
+        <StatusPill status={run.status} dynStatus={dynStatus} />
+      </div>
+    </div>);
+
+}
+
+// ── KanbanBoard ───────────────────────────────────────
+function KanbanBoard({ runs, onOpenRun, dynStatus, cardTitleColor, colCardBg, colCardBorder }) {
+  const total = runs.length;
+  const [activeCol, setActiveCol] = React.useState(COLUMNS[0].id);
+
+  return (
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <div>
+          <h1>Bottling Runs</h1>
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)' }}>
+            {total} active run{total !== 1 ? 's' : ''} · {new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })}
+          </div>
+        </div>
+        <div className="dashboard-meta">Quality Control Board</div>
+      </div>
+
+      {/* Mobile column tab switcher */}
+      <div className="col-tabs">
+        {COLUMNS.map((col) => {
+          const colRuns = runs.filter((r) => r.status === col.id);
+          const isActive = activeCol === col.id;
+          return (
+            <button
+              key={col.id}
+              className={`col-tab${isActive ? ' active' : ''}`}
+              style={{ color: isActive ? dynStatus[col.id].color : 'var(--muted)', borderColor: isActive ? dynStatus[col.id].dot : 'var(--border)', background: isActive ? `${dynStatus[col.id].dot}18` : 'var(--white)' }}
+              onClick={() => setActiveCol(col.id)}
+            >
+              <span className="col-tab-dot" style={{ background: dynStatus[col.id].dot }} />
+              {col.label}
+              <span className="col-tab-count">{colRuns.length}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="kanban-wrap">
+        <div className="kanban">
+          {COLUMNS.map((col) => {
+            const colRuns = runs.filter((r) => r.status === col.id);
+            const isMobileActive = activeCol === col.id;
+            return (
+              <div className={`kanban-col${isMobileActive ? ' mobile-active' : ''}`} key={col.id}>
+                <div className="kanban-col-header">
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '7px',
+                    padding: '5px 12px 5px 9px', borderRadius: '20px',
+                    background: col.id === 'active' || col.id === 'approved' ?
+                    dynStatus[col.id].bg + '80' :
+                    dynStatus[col.id].bg,
+                    border: `1px solid ${dynStatus[col.id].dot}50`,
+                    color: dynStatus[col.id].color
+                  }}>
+                    <div className="col-dot" style={{ background: dynStatus[col.id].dot }} />
+                    <div className="kanban-col-title" style={{ color: dynStatus[col.id].color }}>{col.label}</div>
+                    <div className="col-count" style={{ background: `${dynStatus[col.id].dot}25`, color: dynStatus[col.id].color }}>{colRuns.length}</div>
+                  </span>
+                </div>
+                <div className="kanban-col-cards" style={{ background: colCardBg || 'var(--cream-mid)', borderColor: colCardBorder || 'var(--border)' }}>
+                  <div className="kanban-col-body">
+                  {colRuns.length === 0 ?
+                    <div className="empty-col">
+                      <div>
+                        <div className="empty-col-icon">◇</div>
+                        <div className="empty-col-text">No runs here yet</div>
+                      </div>
+                    </div> :
+                    colRuns.map((run) =>
+                      <RunCard key={run.id} run={run} onClick={onOpenRun} dynStatus={dynStatus} cardTitleColor={cardTitleColor} />
+                    )
+                  }
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Form Definitions ─────────────────────────────────
+const STAFF = ['Jane Smith', 'Marcus Lund', 'Sofia Reyes', 'Tom Baker', 'Lisa Chen', 'David Park'];
+const LAB_STAFF = ['Jane Smith', 'Sofia Reyes', 'Lisa Chen'];
+
+const today = () => { const d = new Date(); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; };
+const todayISO = () => new Date().toISOString().slice(0,10);
+const nowDT = () => { const d = new Date(); return d.toISOString().slice(0,16); };
+
+const FORM_DEFS = {
+  'Lab Pre-Bottling Check': [
+    { id:'checkDate', label:'Check Date', type:'date', autoNow: true },
+    { id:'checkedBy', label:'Checked By', type:'staff', options: STAFF },
+    { id:'tankNumber', label:'Tank Number', type:'text', placeholder:'e.g. T1' },
+    { id:'volume', label:'Volume (L)', type:'number' },
+    { id:'fso2', label:'FSO₂', type:'number' },
+    { id:'tso2', label:'TSO₂', type:'number' },
+    { id:'alc', label:'ALC %', type:'number', step:'0.01' },
+    { id:'ph', label:'pH', type:'number', step:'0.01' },
+    { id:'ta', label:'TA', type:'number', step:'0.01' },
+    { id:'va', label:'VA', type:'number', step:'0.01' },
+    { id:'rs', label:'RS', type:'number', step:'0.01' },
+    { id:'malic', label:'Malic', type:'number', step:'0.01' },
+    { id:'do', label:'DO', type:'number', step:'0.01' },
+    { id:'dco2', label:'DCO₂', type:'number', step:'0.01' },
+    { id:'istc', label:'ISTC', type:'number', step:'0.01' },
+    { id:'filt', label:'FILT', type:'number', step:'0.01' },
+    { id:'notes', label:'Notes', type:'textarea', span: true },
+  ],
+  'Warehouse Check': [
+    { id:'checkDate', label:'Check Date', type:'date', autoNow: true },
+    { id:'checkedBy', label:'Checked By', type:'staff', options: STAFF },
+    { id:'glassQty', label:'Glass QTY', type:'number' },
+    { id:'glassMold', label:'Glass Mold', type:'text' },
+    { id:'capQty', label:'Cap QTY', type:'number' },
+    { id:'capInfo', label:'Cap Info', type:'text' },
+    { id:'labelQty', label:'Label QTY', type:'number' },
+    { id:'labelInfoConfirmed', label:'Label Info Confirmed', type:'yesno' },
+    { id:'boxType', label:'Box Type', type:'text' },
+    { id:'insertType', label:'Insert Type', type:'text' },
+    { id:'notes', label:'Notes', type:'textarea', span: true },
+    { id:'signOff', label:'Sign Off', type:'staff', options: STAFF },
+  ],
+  'Day Before Check': [
+    { id:'checkDate', label:'Check Date', type:'date', autoNow: true },
+    { id:'checkedBy', label:'Checked By', type:'staff', options: LAB_STAFF },
+    { id:'tankNumber', label:'Tank Number', type:'text' },
+    { id:'volume', label:'Volume (L)', type:'number' },
+    { id:'section', label:'— Targets —', type:'divider' },
+    { id:'targetFso2', label:'Target fSO₂', type:'number', step:'0.1' },
+    { id:'targetTso2', label:'Target Tot SO₂', type:'number', step:'0.1' },
+    { id:'targetDo', label:'Target DO', type:'number', step:'0.01' },
+    { id:'targetFilt', label:'Target FILT', type:'number', step:'0.1' },
+    { id:'targetTemp', label:'Target Temp', type:'number', step:'0.1' },
+    { id:'targetPh', label:'Target pH', type:'number', step:'0.01' },
+    { id:'targetTa', label:'Target TA', type:'number', step:'0.01' },
+    { id:'targetAlc', label:'Target ALC %', type:'number', step:'0.01' },
+    { id:'targetVa', label:'Target VA', type:'number', step:'0.01' },
+    { id:'section2', label:'— Actuals —', type:'divider' },
+    { id:'fso2', label:'fSO₂', type:'number', step:'0.1' },
+    { id:'tso2', label:'Tot SO₂', type:'number', step:'0.1' },
+    { id:'do', label:'DO', type:'number', step:'0.01' },
+    { id:'filt', label:'Filt', type:'number', step:'0.1' },
+    { id:'temp', label:'Temp', type:'number', step:'0.1' },
+    { id:'ph', label:'pH', type:'number', step:'0.01' },
+    { id:'ta', label:'TA', type:'number', step:'0.01' },
+    { id:'alc', label:'ALC %', type:'number', step:'0.01' },
+    { id:'va', label:'VA', type:'number', step:'0.01' },
+    { id:'section3', label:'— Results —', type:'divider' },
+    { id:'heatStable', label:'Heat Stable', type:'yesno' },
+    { id:'coldStable', label:'Cold Stable', type:'yesno' },
+    { id:'fso2InTarget', label:'Free SO₂ In Target', type:'yesno' },
+    { id:'notes', label:'Notes', type:'textarea', span: true },
+  ],
+  'Day of Bot Check — Operator': [
+    { id:'checkDate', label:'Check Date', type:'date', autoNow: true },
+    { id:'checkedBy', label:'Checked By', type:'staff', options: STAFF },
+    { id:'section', label:'— Night Clean —', type:'divider' },
+    { id:'nightCleanNum', label:'Innotech Night Clean #', type:'text' },
+    { id:'nightCleanDone', label:'Night Clean Completed', type:'yesno' },
+    { id:'nightCleanDT', label:'Night Clean Completed Date/Time', type:'datetime', autoNow: true },
+    { id:'section2', label:'— Morning Clean —', type:'divider' },
+    { id:'mornCleanNum', label:'Innotech Morn Clean #', type:'text' },
+    { id:'mornCleanDone', label:'Morn Clean Completed', type:'yesno' },
+    { id:'mornCleanDT', label:'Morn Clean Completed Date/Time', type:'datetime', autoNow: true },
+    { id:'section3', label:'— Integrity Test —', type:'divider' },
+    { id:'integrityDate', label:'Integrity Test Date', type:'date', autoNow: true },
+    { id:'integrityResult', label:'Integrity Test Result', type:'number', step:'0.001' },
+    { id:'section4', label:'— Sign Off —', type:'divider' },
+    { id:'velcorin', label:'Velcorin', type:'yesno' },
+    { id:'operatorApproved', label:'Operator Approved', type:'yesno' },
+    { id:'operatorNotes', label:'Operator Notes', type:'textarea', span: true },
+  ],
+  'Day of Bot Check — Lab': [
+    { id:'checkDate', label:'Check Date', type:'date', autoNow: true },
+    { id:'labCheckedBy', label:'Lab Checked By', type:'staff', options: LAB_STAFF },
+    { id:'labAlc', label:'Lab ALC %', type:'number', step:'0.01' },
+    { id:'labDo', label:'Lab DO', type:'number', step:'0.01' },
+    { id:'labCo2', label:'Lab CO₂', type:'number', step:'0.01' },
+    { id:'labFillHeight', label:'Lab Fill Height', type:'text' },
+    { id:'labApproved', label:'Lab Approved', type:'yesno' },
+    { id:'labNotes', label:'Lab Notes', type:'textarea', span: true },
+  ],
+  'Hourly Check — Operator': [
+    { id:'checkedBy', label:'Checked By', type:'staff', options: STAFF },
+    { id:'innotechDoIn', label:'Innotech DO In', type:'number', step:'0.01' },
+    { id:'innotechDoOut', label:'Innotech DO Out', type:'number', step:'0.01' },
+    { id:'capTorque', label:'Cap Torque', type:'number', step:'0.1' },
+    { id:'velcorin', label:'Velcorin (mL/10)', type:'number', step:'0.1' },
+    { id:'operatorNotes', label:'Operator Notes', type:'textarea', span: true },
+  ],
+  'Hourly Check — Lab': [
+    { id:'labCheckedBy', label:'Lab Checked By', type:'staff', options: LAB_STAFF },
+    { id:'volumeG', label:'Volume (g)', type:'number', step:'0.1' },
+    { id:'volumeML', label:'Volume (mL)', type:'number', step:'0.1' },
+    { id:'bottleDo', label:'Bottle DO', type:'number', step:'0.01' },
+    { id:'bottleDco2', label:'Bottle DCO₂', type:'number', step:'0.01' },
+    { id:'labNotes', label:'Lab Notes', type:'textarea', span: true },
+  ],
+};
+
+// ── FormModal ─────────────────────────────────────────
+function FormModal({ formName, run, onClose }) {
+  const fields = FORM_DEFS[formName] || [];
+  const initState = () => {
+    const s = {};
+    fields.forEach(f => {
+      if (f.type === 'divider') return;
+      if (f.autoNow) {
+        s[f.id] = f.type === 'datetime' ? nowDT() : todayISO();
+      } else {
+        s[f.id] = '';
+      }
+    });
+    return s;
+  };
+  const [vals, setVals] = React.useState(initState);
+  const set = (k, v) => setVals(prev => ({ ...prev, [k]: v }));
+
+  const renderField = (f) => {
+    if (f.type === 'divider') return (
+      <div key={f.id} style={{ gridColumn: '1 / -1', paddingTop: 4, paddingBottom: 2 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--wine)', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>{f.label}</div>
+      </div>
+    );
+    const inputStyle = { fontFamily: "'DM Sans', sans-serif", fontSize: 14, padding: '9px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--ink)', outline: 'none', width: '100%', transition: 'border-color 0.15s' };
+    const wrapStyle = { gridColumn: f.span ? '1 / -1' : 'auto', display: 'flex', flexDirection: 'column', gap: 5 };
+    const labelEl = <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--wine)' }}>{f.label}</label>;
+
+    if (f.type === 'staff' || f.type === 'select') return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <select value={vals[f.id]} onChange={e => set(f.id, e.target.value)} style={inputStyle}>
+          <option value="">— Select —</option>
+          {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    );
+    if (f.type === 'yesno') return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <select value={vals[f.id]} onChange={e => set(f.id, e.target.value)} style={inputStyle}>
+          <option value="">— Select —</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+    );
+    if (f.type === 'textarea') return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <textarea value={vals[f.id]} onChange={e => set(f.id, e.target.value)} rows={3} placeholder="Enter notes..." style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+      </div>
+    );
+    if (f.type === 'date') return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <input type="date" value={vals[f.id]} onChange={e => set(f.id, e.target.value)} style={inputStyle} />
+      </div>
+    );
+    if (f.type === 'datetime') return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <input type="datetime-local" value={vals[f.id]} onChange={e => set(f.id, e.target.value)} style={inputStyle} />
+      </div>
+    );
+    return (
+      <div key={f.id} style={wrapStyle}>
+        {labelEl}
+        <input type={f.type === 'number' ? 'number' : 'text'} step={f.step || undefined} value={vals[f.id]} onChange={e => set(f.id, e.target.value)} placeholder={f.placeholder || ''} style={inputStyle} />
+      </div>
+    );
+  };
+
+  return (
+    <div className="form-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="form-modal" style={{ maxWidth: 640 }}>
+        <div className="form-modal-header">
+          <div>
+            <div className="form-modal-title">{formName}</div>
+            <div className="form-modal-subtitle">{run.id} · {run.wine} {run.vintage}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="form-modal-body" style={{ maxHeight: '62vh', overflowY: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {fields.map(renderField)}
+          </div>
+        </div>
+        <div className="form-modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <button className="btn btn-gold" onClick={onClose} style={{ color: '#fff' }}>Submit</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── RunModalForms (top) ───────────────────────────────
+function RunModalForms({ run, onOpenForm }) {
+  const { status } = run;
+
+  if (status === 'active') return (
+    <div style={{ padding: '14px 28px 16px' }}>
+      <div className="modal-btn-section-label">Forms</div>
+      <div className="modal-btn-group">
+        <button className="btn btn-form" onClick={() => onOpenForm('Lab Pre-Bottling Check')}>📋 Lab Pre-Bot Check</button>
+        <button className="btn btn-form" onClick={() => onOpenForm('Warehouse Check')}>📋 Warehouse Check</button>
+      </div>
+    </div>
+  );
+
+  if (status === 'pending') return (
+    <div style={{ padding: '14px 28px 16px' }}>
+      <div className="modal-btn-section-label">Approvals</div>
+      <div className="modal-btn-group">
+        <button className="btn btn-approve"
+          style={run.winemakerApproved === 'yes' ? { opacity: 0.55, cursor: 'default' } : {}}
+          onClick={() => run.winemakerApproved !== 'yes' && run._update({ winemakerApproved: 'yes' })}>
+          {run.winemakerApproved === 'yes' ? '✓ Winemaker Approved' : 'Approve — Winemaker'}
+        </button>
+        <button className="btn btn-approve"
+          style={run.labApproved === 'yes' ? { opacity: 0.55, cursor: 'default' } : {}}
+          onClick={() => run.labApproved !== 'yes' && run._update({ labApproved: 'yes' })}>
+          {run.labApproved === 'yes' ? '✓ Lab Approved' : 'Approve — Lab Manager'}
+        </button>
+      </div>
+    </div>
+  );
+
+  if (status === 'approved') return (
+    <div style={{ padding: '14px 28px 16px' }}>
+      <div className="modal-btn-section-label">Forms</div>
+      <div className="modal-btn-group">
+        <button className="btn btn-form" onClick={() => onOpenForm('Day Before Check')}>📋 Day Before Check</button>
+        <button className="btn btn-form" onClick={() => onOpenForm('Day of Bot Check — Operator')}>📋 Day of Bot Check — Operator</button>
+        <button className="btn btn-form" onClick={() => onOpenForm('Day of Bot Check — Lab')}>📋 Day of Bot Check — Lab</button>
+      </div>
+    </div>
+  );
+
+  if (status === 'production') return (
+    <div style={{ padding: '14px 28px 16px' }}>
+      <div className="modal-btn-section-label">Forms</div>
+      <div className="modal-btn-group">
+        <button className="btn btn-form" onClick={() => onOpenForm('Hourly Check — Operator')}>📋 Hourly Check — Operator</button>
+        <button className="btn btn-form" onClick={() => onOpenForm('Hourly Check — Lab')}>📋 Hourly Check — Lab</button>
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+// ── RunModalBottomActions (bottom) ────────────────────
+function RunModalBottomActions({ run, onClose, onUpdateRun }) {
+  const action = (changes) => onUpdateRun(run.id, changes);
+  const { status } = run;
+
+  return (
+    <div className="modal-actions">
+      <button className="btn btn-ghost" onClick={onClose}>Close</button>
+      {status === 'active' && (
+        <button className="btn btn-action" onClick={() => { action({ status: 'pending' }); onClose(); }}>Send for Approval →</button>
+      )}
+      {status === 'approved' && <>
+        <button className="btn btn-action" onClick={() => { action({ status: 'production' }); onClose(); }}>Start Production →</button>
+        <button className="btn btn-warn" onClick={() => { action({ status: 'completed' }); onClose(); }}>Run Complete ✓</button>
+      </>}
+      {status === 'production' && (
+        <button className="btn btn-warn" onClick={() => { action({ status: 'approved' }); onClose(); }}>End Production ↩</button>
+      )}
+    </div>
+  );
+}
+
+// ── RunModal ──────────────────────────────────────────
+function RunModal({ run, onClose, dynStatus, onUpdateRun }) {
+  const cfg = (dynStatus || STATUS_CONFIG)[run.status];
+  const [activeForm, setActiveForm] = useState(null);
+  const details = [
+  { label: 'Run ID', value: run.id },
+  { label: 'Vintrace ID', value: run.vintraceId },
+  { label: 'Vintage', value: run.vintage },
+  { label: 'Volume', value: run.volume },
+  { label: 'Tanks', value: run.tanks },
+  { label: 'Bottling Date', value: run.bottlingDate },
+  { label: 'Days', value: run.days },
+  { label: 'Winemaker', value: run.winemaker },
+  { label: 'Created Date', value: run.createdDate || '—' }];
+
+  return (
+    <>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <div className="modal-header-top">
+            <div>
+              <div className="modal-run-id">{run.id}</div>
+              <div className="modal-wine-name">{run.wine}</div>
+              <div className="modal-vintage">{run.vintage} Vintage</div>
+            </div>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <span className="modal-status-badge" style={{
+              color: cfg.color,
+              background: cfg.bg,
+              border: `1px solid ${cfg.color}40`
+            }}>
+              <span className="dot" style={{ background: cfg.dot }} />
+              {cfg.label}
+            </span>
+          </div>
+        </div>
+        <div className="modal-divider" />
+        <RunModalForms run={{ ...run, _update: (c) => onUpdateRun(run.id, c) }} onOpenForm={setActiveForm} />
+        <div className="modal-divider" />
+        <div className="modal-body">
+          <div className="modal-section">
+            <div className="modal-section-title">Run Details</div>
+            <div className="modal-detail-grid">
+              {details.map((d) =>
+              <div className="modal-detail-cell" key={d.label}>
+                  <div className="modal-detail-cell-label">{d.label}</div>
+                  <div className="modal-detail-cell-value">{d.value}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="modal-section">
+            <div className="modal-section-title">Approvals</div>
+            <div className="modal-detail-grid">
+              {[{label:'Winemaker Approved', val: run.winemakerApproved}, {label:'Lab Approved', val: run.labApproved}, {label:'Warehouse Approved', val: run.warehouseApproved}].map(a => (
+                <div className="modal-detail-cell" key={a.label}>
+                  <div className="modal-detail-cell-label">{a.label}</div>
+                  <div className="modal-detail-cell-value" style={{ color: a.val === 'yes' ? '#2a7048' : '#8b2020', fontWeight: 600, textTransform: 'uppercase', fontSize: 12 }}>
+                    {a.val === 'yes' ? '✓ Yes' : '✗ No'}
+                  </div>
+                </div>
+              ))}
+              <div className="modal-detail-cell">
+                <div className="modal-detail-cell-label">Sessions Completed</div>
+                <div className="modal-detail-cell-value">{run.sessionsCompleted ?? 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-section">
+            <div className="modal-section-title">Links</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[{label: '📄 Report', url: run.reportUrl}, {label: '📁 Drive Folder', url: run.driveFolderUrl}].map(link => (
+                <div key={link.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--cream)', borderRadius: 7, border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 13, color: 'var(--ink)' }}>{link.label}</span>
+                  {link.url
+                    ? <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--wine)', fontWeight: 500, textDecoration: 'none', border: '1px solid var(--border)', padding: '3px 10px', borderRadius: 5 }}>Open →</a>
+                    : <span style={{ fontSize: 12, color: 'var(--muted)' }}>Not set</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-divider" />
+        <RunModalBottomActions run={run} onClose={onClose} onUpdateRun={onUpdateRun} />
+      </div>
+    </div>
+    {activeForm && <FormModal formName={activeForm} run={run} onClose={() => setActiveForm(null)} />}
+    </>
+  );
+}
+
+// ── NewRunForm ────────────────────────────────────────
+function NewRunForm({ runs, onSubmit, onCancel }) {
+  const [form, setForm] = useState({
+    wine: '', vintage: '', vintraceId: '', tanks: '',
+    volume: '', bottlingDate: '', days: '', winemaker: ''
+  });
+  const [errors, setErrors] = useState({});
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.wine.trim()) e.wine = 'Wine name is required';
+    if (!form.vintage.trim()) e.vintage = 'Vintage is required';
+    if (!form.vintraceId.trim()) e.vintraceId = 'Vintrace ID is required';
+    if (!form.tanks.trim()) e.tanks = 'Tank numbers are required';
+    if (!form.volume.trim()) e.volume = 'Volume is required';
+    if (!form.bottlingDate.trim()) e.bottlingDate = 'Bottling date is required';
+    if (!form.days.trim()) e.days = 'Number of days is required';
+    if (!form.winemaker.trim()) e.winemaker = 'Winemaker is required';
+    // date format
+    if (form.bottlingDate && !/^\d{2}-\d{2}-\d{4}$/.test(form.bottlingDate)) {
+      e.bottlingDate = 'Format: DD-MM-YYYY';
+    }
+    return e;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) {setErrors(errs);return;}
+    const newRun = {
+      id: genRunId(runs),
+      wine: form.wine,
+      vintage: form.vintage,
+      vintraceId: form.vintraceId,
+      tanks: form.tanks,
+      volume: form.volume + (form.volume.includes('L') ? '' : ' L'),
+      bottlingDate: form.bottlingDate,
+      days: form.days,
+      winemaker: form.winemaker,
+      status: 'active'
+    };
+    onSubmit(newRun);
+  };
+
+  const Field = ({ id, label, placeholder, hint, required, span }) =>
+  <div className={`form-field${span ? ' span2' : ''}`}>
+      <label className="form-label">{label}{required && <span>*</span>}</label>
+      <input
+      className={`form-input${errors[id] ? ' error' : ''}`}
+      placeholder={placeholder}
+      value={form[id]}
+      onChange={(e) => {set(id, e.target.value);if (errors[id]) setErrors((ev) => ({ ...ev, [id]: null }));}} />
+    
+      {errors[id] && <div className="form-error">{errors[id]}</div>}
+      {hint && !errors[id] && <div className="form-hint">{hint}</div>}
+    </div>;
+
+
+  return (
+    <div className="form-page">
+      <div className="form-card">
+        <div className="form-card-header">
+          <h2>New Bottling <em>Run</em></h2>
+          <p>Complete all fields to create a new quality control run</p>
+        </div>
+        <div className="form-body">
+          <form onSubmit={handleSubmit}>
+
+            <div className="form-section-title">Wine Information</div>
+            <div className="form-grid">
+              <Field id="wine" label="Wine Name" placeholder="e.g. Big White" required />
+              <Field id="vintage" label="Vintage" placeholder="e.g. 2024" required hint="4-digit year" />
+              <Field id="vintraceId" label="Vintrace ID" placeholder="e.g. VT-1234" required />
+              <Field id="winemaker" label="Winemaker" placeholder="e.g. Jane Smith" required />
+            </div>
+
+            <div className="form-section-title">Bottling Details</div>
+            <div className="form-grid">
+              <Field id="tanks" label="Tank Numbers" placeholder="e.g. T1, T2" required />
+              <Field id="volume" label="Volume" placeholder="e.g. 10000 L" required hint="In litres" />
+              <Field id="bottlingDate" label="Bottling Date" placeholder="DD-MM-YYYY" required hint="Format: DD-MM-YYYY" />
+              <Field id="days" label="Number of Days" placeholder="e.g. 2" required />
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+              <button type="submit" className="btn btn-gold">Create Run</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>);
+
+}
+
+// ── Toast ─────────────────────────────────────────────
+function Toast({ message }) {
+  return (
+    <div className="toast">
+      <span className="toast-icon">✦</span>
+      {message}
+    </div>);
+
+}
+
+// ── Logo ──────────────────────────────────────────────
+function LogoMark() {
+  return <img src={window.__resources && window.__resources.logoImg ? window.__resources.logoImg : 'uploads/logo.png'} alt="Frind Estate Winery" style={{ height: "66px", width: "80px" }} />;
+
+}
+
+// ── App ───────────────────────────────────────────────
+function App() {
+  const stored = JSON.parse(localStorage.getItem('frind_runs') || 'null');
+  const [runs, setRuns] = useState(stored || SEED_RUNS);
+  const [view, setView] = useState('dashboard');
+  const [openRun, setOpenRun] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('frind_runs', JSON.stringify(runs));
+  }, [runs]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+  const handleNewRun = (run) => {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yyyy = today.getFullYear();
+    const enriched = {
+      ...run,
+      createdDate: `${dd}-${mm}-${yyyy}`,
+      winemakerApproved: 'no',
+      labApproved: 'no',
+      warehouseApproved: 'no',
+      sessionsCompleted: 0,
+      reportUrl: '',
+      driveFolderUrl: '',
+    };
+    setRuns((r) => [...r, enriched]);
+    setView('dashboard');
+    showToast(`Run ${run.id} created — ${run.wine}`);
+  };
+
+  const handleUpdateRun = (id, changes) => {
+    setRuns(rs => rs.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, ...changes };
+      if (updated.status === 'pending' && updated.winemakerApproved === 'yes' && updated.labApproved === 'yes') {
+        updated.status = 'approved';
+      }
+      return updated;
+    }));
+    setOpenRun(prev => {
+      if (!prev || prev.id !== id) return prev;
+      const updated = { ...prev, ...changes };
+      if (updated.status === 'pending' && updated.winemakerApproved === 'yes' && updated.labApproved === 'yes') {
+        updated.status = 'approved';
+      }
+      return updated;
+    });
+  };
+
+  // Tweaks
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksOpen(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "accentScheme": "classic",
+    "cardDensity": "comfortable",
+    "cardTitleColor": "#2a2a2a",
+    "colCardBg": "#ede8e0",
+    "colCardBorder": "#d8d0c4",
+    "activeColor": "#2e5aa0",
+    "activeBg": "#e8eef8",
+    "pendingColor": "#a07020",
+    "pendingBg": "#f5eddc",
+    "approvedColor": "#2a7048",
+    "approvedBg": "#e0f0e8",
+    "productionColor": "#621e1e",
+    "productionBg": "#f2e4e4",
+    "completedColor": "#5c5e60",
+    "completedBg": "#eaebec"
+  } /*EDITMODE-END*/;
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const setTweak = (k, v) => {
+    setTweaks((t) => ({ ...t, [k]: v }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  // Build dynamic STATUS_CONFIG from tweaks
+  const dynStatus = {
+    active: { label: 'Active', color: tweaks.activeColor, bg: tweaks.activeBg, dot: tweaks.activeColor },
+    pending: { label: 'Pending Approval', color: tweaks.pendingColor, bg: tweaks.pendingBg, dot: tweaks.pendingColor },
+    approved: { label: 'Approved', color: tweaks.approvedColor, bg: tweaks.approvedBg, dot: tweaks.approvedColor },
+    production: { label: 'In Production', color: tweaks.productionColor, bg: tweaks.productionBg, dot: tweaks.productionColor },
+    completed: { label: 'Completed', color: tweaks.completedColor, bg: tweaks.completedBg, dot: tweaks.completedColor }
+  };
+
+  return (
+    <>
+      <header className="header">
+        <div className="header-brand" style={{ fontFamily: "\"Cormorant Garamond\"" }}>
+          <div className="header-logo"><LogoMark /></div>
+          <div className="header-title" style={{ fontFamily: "\"Cormorant Garamond\"" }}><span>Frind Wine Quality Control</span></div>
+        </div>
+        <nav className="header-nav">
+          <button
+            className={`nav-btn ghost${view === 'dashboard' ? ' active' : ''}`}
+            onClick={() => setView('dashboard')}>
+            Dashboard</button>
+          <button
+            className={`nav-btn primary`}
+            onClick={() => setView('newrun')} style={{ color: "rgb(241, 232, 232)" }}>
+            + New Run</button>
+        </nav>
+      </header>
+
+      <div className="main">
+        {view === 'dashboard' &&
+        <KanbanBoard runs={runs} onOpenRun={setOpenRun} dynStatus={dynStatus} cardTitleColor={tweaks.cardTitleColor} colCardBg={tweaks.colCardBg} colCardBorder={tweaks.colCardBorder} />
+        }
+        {view === 'newrun' &&
+        <NewRunForm
+          runs={runs}
+          onSubmit={handleNewRun}
+          onCancel={() => setView('dashboard')} />
+
+        }
+      </div>
+
+      {openRun &&
+      <RunModal run={openRun} onClose={() => setOpenRun(null)} dynStatus={dynStatus} onUpdateRun={handleUpdateRun} />
+      }
+
+      {toast && <Toast message={toast} />}
+
+      <div className={`tweaks-panel${tweaksOpen ? ' open' : ''}`}>
+        <div className="tweaks-title">Tweaks</div>
+
+        <div className="tweak-row">
+          <div className="tweak-label">Card Title Colour</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={tweaks.cardTitleColor} onChange={(e) => setTweak('cardTitleColor', e.target.value)} style={{ width: 32, height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', padding: 2 }} />
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>Card wine name</span>
+          </div>
+        </div>
+
+        <div className="tweak-row">
+          <div className="tweak-label">Column Background</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={tweaks.colCardBg} onChange={(e) => setTweak('colCardBg', e.target.value)} style={{ width: 32, height: 28, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', padding: 2 }} />
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>Cards area</span>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
+        <div className="tweak-label" style={{ marginBottom: 10 }}>Status Colours</div>
+
+        {[
+        { key: 'activeColor', bgKey: 'activeBg', label: 'Active' },
+        { key: 'pendingColor', bgKey: 'pendingBg', label: 'Pending' },
+        { key: 'approvedColor', bgKey: 'approvedBg', label: 'Approved' },
+        { key: 'productionColor', bgKey: 'productionBg', label: 'In Production' },
+        { key: 'completedColor', bgKey: 'completedBg', label: 'Completed' }].
+        map(({ key, bgKey, label }) =>
+        <div className="tweak-row" key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, color: 'var(--ink)' }}>{label}</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="color" title="Text colour" value={tweaks[key]} onChange={(e) => setTweak(key, e.target.value)} style={{ width: 28, height: 24, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', padding: 2 }} />
+              <input type="color" title="Background colour" value={tweaks[bgKey]} onChange={(e) => setTweak(bgKey, e.target.value)} style={{ width: 28, height: 24, border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', padding: 2 }} />
+            </div>
+          </div>
+        )}
+        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>Left = text · Right = background</div>
+      </div>
+    </>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -119,8 +119,8 @@ function appendDayBefore(runId, data) {
 function appendDayOfBot(runId, sessionId, operatorData, labData) {
   try {
     var ss = _openReport(runId);
-    var sheet = ss.getSheetByName('Day Of Checks');
-    if (!sheet) return { success: false, error: 'Tab "Day Of Checks" not found in report' };
+    var sheet = ss.getSheetByName('Day of Bot Checks');
+    if (!sheet) return { success: false, error: 'Tab "Day of Bot Checks" not found in report' };
     sheet.appendRow([
       generateEntryId('DOB'),
       runId,
@@ -134,9 +134,9 @@ function appendDayOfBot(runId, sessionId, operatorData, labData) {
       operatorData.INNOTECH_MORN_CLEAN_NUM         || '',
       operatorData.INNOTECH_MORN_CLEAN_COMPLETED   || '',
       operatorData.INNOTECH_MORN_CLEAN_DATETIME    || '',
-      labData.INTEGRITY_TEST_DATE                  || '',
-      labData.INTEGRITY_TEST_RESULT                || '',
-      labData.VELCORIN                             || '',
+      operatorData.INTEGRITY_TEST_DATE             || '',
+      operatorData.INTEGRITY_TEST_RESULT           || '',
+      operatorData.VELCORIN                        || '',
       labData.LAB_ALC                              || '',
       labData.LAB_DO                               || '',
       labData.LAB_CO2                              || '',
@@ -161,20 +161,39 @@ function appendHourlyCheck(runId, sessionId, checkHour, operatorData, labData) {
       generateEntryId('HC'),
       runId,
       sessionId,
-      checkHour,
-      new Date(),
       operatorData.CHECKED_BY      || '',
       labData.LAB_CHECKED_BY       || '',
-      operatorData.VOLUME_G        || '',
-      operatorData.VOLUME_ML       || '',
-      operatorData.BOTTLE_DO       || '',
-      operatorData.BOTTLE_DCO2     || '',
+      checkHour,
+      new Date(),
+      labData.VOLUME_G             || '',
+      labData.VOLUME_ML            || '',
+      labData.BOTTLE_DO            || '',
+      labData.BOTTLE_DCO2          || '',
       operatorData.INNOTECH_DO_IN  || '',
       operatorData.INNOTECH_DO_OUT || '',
       operatorData.CAP_TORQUE      || '',
       operatorData.VELCORIN        || '',
       operatorData.OPERATOR_NOTES  || '',
       labData.LAB_NOTES            || ''
+    ]);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function appendStaffRunLog(runId, entryId, row) {
+  try {
+    var ss = _openReport(runId);
+    var sheet = ss.getSheetByName('Staff Run Log');
+    if (!sheet) return { success: false, error: 'Tab "Staff Run Log" not found in report' };
+    sheet.appendRow([
+      entryId,
+      runId,
+      row.NAME         || '',
+      row.ROLE         || '',
+      row.HOURS_WORKED || '',
+      row.NOTES        || ''
     ]);
     return { success: true };
   } catch (e) {

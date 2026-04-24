@@ -1,14 +1,91 @@
+<style>
+#srl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+}
+#srl-table th {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--cream-mid);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+#srl-table td {
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+#srl-table select,
+#srl-table input[type="number"],
+#srl-table input[type="text"] {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+#srl-table select:focus,
+#srl-table input[type="number"]:focus,
+#srl-table input[type="text"]:focus {
+  border-color: var(--gold);
+  background: var(--white);
+}
+#srl-table .srl-role-input {
+  background: var(--cream-mid);
+  color: var(--muted);
+}
+#srl-table .srl-remove-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1;
+  display: block;
+  margin: 0 auto;
+}
+#srl-table .srl-remove-btn:hover {
+  color: oklch(55% 0.11 10);
+  background: oklch(97% 0.02 15);
+}
+.srl-invalid {
+  border-color: oklch(55% 0.11 10) !important;
+  background: oklch(99% 0.01 15) !important;
+}
+</style>
+
 <script>
+  var _srlStaff = [];
+  var _srlRunId = '';
+  var _srlRowCount = 0;
+
   function renderStaffRunLog(runId) {
+    _srlRunId = runId;
+    _srlRowCount = 0;
     var container = document.getElementById('run-detail-content');
-    container.innerHTML = '<div class="state-message">Loading form...</div>';
+    container.innerHTML = '<div class="state-message">Loading staff...</div>';
     google.script.run
       .withSuccessHandler(function(result) {
         if (!result || !result.success) {
           container.innerHTML = '<div class="state-message error">Could not load staff: ' + esc((result && result.error) || 'Unknown error') + '</div>';
           return;
         }
-        container.innerHTML = _srlBuild(runId, result.data);
+        _srlStaff = result.data;
+        container.innerHTML = _srlBuild(runId);
+        _srlAddRow();
       })
       .withFailureHandler(function(err) {
         container.innerHTML = '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
@@ -16,66 +93,102 @@
       .serverGetStaff();
   }
 
-  function _srlBuild(runId, staff) {
-    // Build options including role as data attribute for auto-fill
-    var nameOptions = '<option value="" data-role="">-- Select --</option>';
-    for (var i = 0; i < staff.length; i++) {
-      nameOptions += '<option value="' + esc(staff[i].name) + '" data-role="' + esc(staff[i].role) + '">' +
-        esc(staff[i].name) + ' (' + esc(staff[i].role) + ')' +
-      '</option>';
-    }
+  function _srlBuild(runId) {
     return '<button class="rd-back" onclick="viewRun(\'' + esc(runId) + '\')">&larr; Back to Run</button>' +
-      '<div class="rd-card" style="max-width:560px">' +
+      '<div class="rd-card" style="max-width:800px">' +
         '<div class="rd-card-title">Staff Run Log</div>' +
-        '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
-        '<form id="srl-form" onsubmit="submitStaffRunLog(event, \'' + esc(runId) + '\')" style="margin-top:14px">' +
-          '<div class="form-grid">' +
-            '<div class="form-group full-width">' +
-              '<label for="srl-name">Name</label>' +
-              '<select id="srl-name" name="NAME" onchange="_srlAutoFillRole()" required>' + nameOptions + '</select>' +
-            '</div>' +
-            '<div class="form-group">' +
-              '<label for="srl-role">Role</label>' +
-              '<input type="text" id="srl-role" name="ROLE" readonly style="background:#f8fafc;color:#64748b">' +
-            '</div>' +
-            '<div class="form-group">' +
-              '<label for="srl-hours">Hours Worked</label>' +
-              '<input type="number" id="srl-hours" name="HOURS_WORKED" step="0.5" min="0" required>' +
-            '</div>' +
-            '<div class="form-group full-width"><label for="srl-notes">Notes</label><textarea id="srl-notes" name="NOTES" rows="2"></textarea></div>' +
-          '</div>' +
-          '<div class="form-actions">' +
-            '<button type="submit" id="srl-submit" class="btn btn-primary">Submit</button>' +
-            '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
-            '<span id="srl-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
-          '</div>' +
-          '<div id="srl-error" class="alert alert-error" style="display:none"></div>' +
-        '</form>' +
+        '<div style="color:var(--muted);font-size:13px;margin:4px 0 18px">Run: ' + esc(runId) + '</div>' +
+        '<div style="overflow-x:auto">' +
+          '<table id="srl-table">' +
+            '<thead><tr>' +
+              '<th style="width:28%">Name</th>' +
+              '<th style="width:18%">Role</th>' +
+              '<th style="width:15%">Hours Worked</th>' +
+              '<th>Notes</th>' +
+              '<th style="width:44px"></th>' +
+            '</tr></thead>' +
+            '<tbody id="srl-tbody"></tbody>' +
+          '</table>' +
+        '</div>' +
+        '<div style="margin-top:12px">' +
+          '<button type="button" class="btn btn-secondary" style="border-color:var(--gold);color:var(--gold)" onclick="_srlAddRow()">+ Add Staff Member</button>' +
+        '</div>' +
+        '<div style="margin-top:16px;display:flex;align-items:center;justify-content:flex-end;gap:12px">' +
+          '<span id="srl-spinner" style="display:none;color:var(--muted);font-size:13px">Saving...</span>' +
+          '<button type="button" id="srl-submit" class="btn btn-primary" onclick="_srlSubmit()">Submit Log</button>' +
+        '</div>' +
+        '<div id="srl-error" class="alert alert-error" style="display:none;margin-top:12px"></div>' +
+        '<div id="srl-success" class="alert alert-success" style="display:none;margin-top:12px"></div>' +
       '</div>';
   }
 
-  function _srlAutoFillRole() {
-    var sel     = document.getElementById('srl-name');
-    var roleEl  = document.getElementById('srl-role');
-    var opt     = sel.options[sel.selectedIndex];
-    roleEl.value = opt ? (opt.getAttribute('data-role') || '') : '';
+  function _srlAddRow() {
+    var tbody = document.getElementById('srl-tbody');
+    var idx = _srlRowCount++;
+    var nameOptions = '<option value="">-- Select --</option>';
+    for (var i = 0; i < _srlStaff.length; i++) {
+      nameOptions += '<option value="' + esc(_srlStaff[i].name) + '" data-role="' + esc(_srlStaff[i].role) + '">' +
+        esc(_srlStaff[i].name) + '</option>';
+    }
+    var tr = document.createElement('tr');
+    tr.id = 'srl-row-' + idx;
+    tr.innerHTML =
+      '<td><select id="srl-name-' + idx + '" onchange="_srlFillRole(' + idx + ')">' + nameOptions + '</select></td>' +
+      '<td><input type="text" id="srl-role-' + idx + '" class="srl-role-input" readonly></td>' +
+      '<td><input type="number" id="srl-hours-' + idx + '" min="0" step="0.5"></td>' +
+      '<td><input type="text" id="srl-notes-' + idx + '"></td>' +
+      '<td><button type="button" class="srl-remove-btn" onclick="_srlRemoveRow(' + idx + ')">&#215;</button></td>';
+    tbody.appendChild(tr);
   }
 
-  function submitStaffRunLog(event, runId) {
-    event.preventDefault();
-    var form    = document.getElementById('srl-form');
+  function _srlFillRole(idx) {
+    var sel = document.getElementById('srl-name-' + idx);
+    var roleEl = document.getElementById('srl-role-' + idx);
+    var opt = sel.options[sel.selectedIndex];
+    roleEl.value = opt ? (opt.getAttribute('data-role') || '') : '';
+    sel.classList.remove('srl-invalid');
+  }
+
+  function _srlRemoveRow(idx) {
+    var row = document.getElementById('srl-row-' + idx);
+    var tbody = document.getElementById('srl-tbody');
+    if (row) row.remove();
+    if (tbody.rows.length === 0) _srlAddRow();
+  }
+
+  function _srlSubmit() {
+    var tbody = document.getElementById('srl-tbody');
+    var rows = tbody.rows;
+    var data = [];
+    var valid = true;
+    for (var i = 0; i < rows.length; i++) {
+      var idx = rows[i].id.replace('srl-row-', '');
+      var nameEl  = document.getElementById('srl-name-'  + idx);
+      var roleEl  = document.getElementById('srl-role-'  + idx);
+      var hoursEl = document.getElementById('srl-hours-' + idx);
+      var notesEl = document.getElementById('srl-notes-' + idx);
+      nameEl.classList.remove('srl-invalid');
+      hoursEl.classList.remove('srl-invalid');
+      var rowValid = true;
+      if (!nameEl.value) { nameEl.classList.add('srl-invalid'); rowValid = false; }
+      if (!hoursEl.value || parseFloat(hoursEl.value) <= 0) { hoursEl.classList.add('srl-invalid'); rowValid = false; }
+      if (!rowValid) { valid = false; continue; }
+      data.push({
+        NAME:         nameEl.value,
+        ROLE:         roleEl.value,
+        HOURS_WORKED: parseFloat(hoursEl.value),
+        NOTES:        notesEl ? notesEl.value : ''
+      });
+    }
+    if (!valid || data.length === 0) return;
     var btn     = document.getElementById('srl-submit');
     var spinner = document.getElementById('srl-spinner');
     var errEl   = document.getElementById('srl-error');
+    var sucEl   = document.getElementById('srl-success');
     btn.disabled = true;
     spinner.style.display = 'inline';
     errEl.style.display   = 'none';
-    var formData = {
-      NAME:          form.NAME.value,
-      ROLE:          form.ROLE.value,
-      HOURS_WORKED:  form.HOURS_WORKED.value,
-      NOTES:         form.NOTES.value
-    };
+    sucEl.style.display   = 'none';
     google.script.run
       .withSuccessHandler(function(result) {
         btn.disabled = false;
@@ -85,7 +198,12 @@
           errEl.style.display = 'block';
           return;
         }
-        viewRun(runId);
+        sucEl.textContent   = 'Staff log submitted successfully.';
+        sucEl.style.display = 'block';
+        var tb = document.getElementById('srl-tbody');
+        tb.innerHTML = '';
+        _srlRowCount = 0;
+        _srlAddRow();
       })
       .withFailureHandler(function(err) {
         btn.disabled = false;
@@ -93,6 +211,6 @@
         errEl.textContent   = 'Server error: ' + String(err);
         errEl.style.display = 'block';
       })
-      .serverSubmitStaffRunLog(runId, formData);
+      .serverSubmitStaffRunLog(_srlRunId, data);
   }
 </script>

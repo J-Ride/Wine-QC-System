@@ -29,13 +29,13 @@
         '<div class="rd-card-title">' + title + '</div>' +
         '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
         '<div class="rd-field"><span class="rd-field-label">Session ID</span><span class="rd-field-value">' + esc(sessionId) + '</span></div>' +
-        '<div style="font-size:12px;color:#64748b;margin:8px 0 14px">Split submission: Operator and Lab each fill their own fields separately.</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin:8px 0 14px">Split submission: Operator and Lab each fill their own fields separately.</div>' +
         '<form id="doc-form" onsubmit="' + submitFn + '">' +
           '<div class="form-grid">' + fields + '</div>' +
           '<div class="form-actions">' +
             '<button type="submit" id="doc-submit" class="btn btn-primary">Submit ' + role + ' Fields</button>' +
             '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
-            '<span id="doc-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+            '<span id="doc-spinner" style="display:none;color:var(--muted);font-size:13px">Saving...</span>' +
           '</div>' +
           '<div id="doc-error" class="alert alert-error" style="display:none"></div>' +
           '<div id="doc-success" class="alert alert-success" style="display:none"></div>' +
@@ -51,15 +51,15 @@
       '<div class="form-group"><label for="doc-mc-num">Innotech Morn Clean #</label><input type="text" id="doc-mc-num" name="INNOTECH_MORN_CLEAN_NUM"></div>' +
       '<div class="form-group"><label for="doc-mc-done">Morn Clean Completed</label><select id="doc-mc-done" name="INNOTECH_MORN_CLEAN_COMPLETED"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
       '<div class="form-group"><label for="doc-mc-dt">Morn Clean Date/Time</label><input type="datetime-local" id="doc-mc-dt" name="INNOTECH_MORN_CLEAN_DATETIME"></div>' +
+      '<div class="form-group"><label for="doc-int-date">Integrity Test Date</label><input type="date" id="doc-int-date" name="INTEGRITY_TEST_DATE"></div>' +
+      '<div class="form-group"><label for="doc-int-result">Integrity Test Result</label><select id="doc-int-result" name="INTEGRITY_TEST_RESULT"><option value="">--</option><option>Pass</option><option>Fail</option></select></div>' +
+      '<div class="form-group"><label for="doc-velcorin">Velcorin Added</label><select id="doc-velcorin" name="VELCORIN"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
       '<div class="form-group"><label for="doc-op-approved">Operator Approved</label><select id="doc-op-approved" name="OPERATOR_APPROVED"><option value="">--</option><option>Yes</option><option>No</option></select></div>' +
       '<div class="form-group full-width"><label for="doc-op-notes">Operator Notes</label><textarea id="doc-op-notes" name="OPERATOR_NOTES" rows="2"></textarea></div>';
   }
 
   function _docLabFields(staff) {
     return '<div class="form-group"><label for="doc-lab-by">Lab Checked By</label><select id="doc-lab-by" name="LAB_CHECKED_BY" required>' + _staffOptions(staff, 'Lab') + '</select></div>' +
-      '<div class="form-group"><label for="doc-int-date">Integrity Test Date</label><input type="date" id="doc-int-date" name="INTEGRITY_TEST_DATE"></div>' +
-      '<div class="form-group"><label for="doc-int-result">Integrity Test Result</label><select id="doc-int-result" name="INTEGRITY_TEST_RESULT"><option value="">--</option><option>Pass</option><option>Fail</option></select></div>' +
-      '<div class="form-group"><label for="doc-velcorin">Velcorin</label><input type="text" id="doc-velcorin" name="VELCORIN"></div>' +
       '<div class="form-group"><label for="doc-lab-alc">Lab Alc %</label><input type="number" id="doc-lab-alc" name="LAB_ALC" step="any"></div>' +
       '<div class="form-group"><label for="doc-lab-do">Lab DO</label><input type="number" id="doc-lab-do" name="LAB_DO" step="any"></div>' +
       '<div class="form-group"><label for="doc-lab-co2">Lab CO2</label><input type="number" id="doc-lab-co2" name="LAB_CO2" step="any"></div>' +
@@ -83,28 +83,28 @@
     var formData = {};
     if (role === 'Operator') {
       formData = {
-        CHECKED_BY:                    form.CHECKED_BY.value,
-        INNOTECH_NIGHT_CLEAN_NUM:      form.INNOTECH_NIGHT_CLEAN_NUM.value,
+        CHECKED_BY:                     form.CHECKED_BY.value,
+        INNOTECH_NIGHT_CLEAN_NUM:       form.INNOTECH_NIGHT_CLEAN_NUM.value,
         INNOTECH_NIGHT_CLEAN_COMPLETED: form.INNOTECH_NIGHT_CLEAN_COMPLETED.value,
-        INNOTECH_NIGHT_CLEAN_DATETIME: form.INNOTECH_NIGHT_CLEAN_DATETIME.value,
-        INNOTECH_MORN_CLEAN_NUM:       form.INNOTECH_MORN_CLEAN_NUM.value,
-        INNOTECH_MORN_CLEAN_COMPLETED: form.INNOTECH_MORN_CLEAN_COMPLETED.value,
-        INNOTECH_MORN_CLEAN_DATETIME:  form.INNOTECH_MORN_CLEAN_DATETIME.value,
-        OPERATOR_APPROVED:             form.OPERATOR_APPROVED.value,
-        OPERATOR_NOTES:                form.OPERATOR_NOTES.value
+        INNOTECH_NIGHT_CLEAN_DATETIME:  form.INNOTECH_NIGHT_CLEAN_DATETIME.value,
+        INNOTECH_MORN_CLEAN_NUM:        form.INNOTECH_MORN_CLEAN_NUM.value,
+        INNOTECH_MORN_CLEAN_COMPLETED:  form.INNOTECH_MORN_CLEAN_COMPLETED.value,
+        INNOTECH_MORN_CLEAN_DATETIME:   form.INNOTECH_MORN_CLEAN_DATETIME.value,
+        INTEGRITY_TEST_DATE:            form.INTEGRITY_TEST_DATE.value,
+        INTEGRITY_TEST_RESULT:          form.INTEGRITY_TEST_RESULT.value,
+        VELCORIN:                       form.VELCORIN.value,
+        OPERATOR_APPROVED:              form.OPERATOR_APPROVED.value,
+        OPERATOR_NOTES:                 form.OPERATOR_NOTES.value
       };
     } else {
       formData = {
-        LAB_CHECKED_BY:        form.LAB_CHECKED_BY.value,
-        INTEGRITY_TEST_DATE:   form.INTEGRITY_TEST_DATE.value,
-        INTEGRITY_TEST_RESULT: form.INTEGRITY_TEST_RESULT.value,
-        VELCORIN:              form.VELCORIN.value,
-        LAB_ALC:               form.LAB_ALC.value,
-        LAB_DO:                form.LAB_DO.value,
-        LAB_CO2:               form.LAB_CO2.value,
-        LAB_FILL_HEIGHT:       form.LAB_FILL_HEIGHT.value,
-        LAB_APPROVED:          form.LAB_APPROVED.value,
-        LAB_NOTES:             form.LAB_NOTES.value
+        LAB_CHECKED_BY:  form.LAB_CHECKED_BY.value,
+        LAB_ALC:         form.LAB_ALC.value,
+        LAB_DO:          form.LAB_DO.value,
+        LAB_CO2:         form.LAB_CO2.value,
+        LAB_FILL_HEIGHT: form.LAB_FILL_HEIGHT.value,
+        LAB_APPROVED:    form.LAB_APPROVED.value,
+        LAB_NOTES:       form.LAB_NOTES.value
       };
     }
 

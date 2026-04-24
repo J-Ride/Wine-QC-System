@@ -50,13 +50,13 @@
         '<div class="rd-field"><span class="rd-field-label">Run ID</span><span class="rd-field-value">' + esc(runId) + '</span></div>' +
         '<div class="rd-field"><span class="rd-field-label">Session ID</span><span class="rd-field-value">' + esc(sessionId) + '</span></div>' +
         '<div class="rd-field"><span class="rd-field-label">Check Hour</span><span class="rd-field-value">' + checkHour + '</span></div>' +
-        '<div style="font-size:12px;color:#64748b;margin:8px 0 14px">Split submission: Operator and Lab each fill their own fields separately.</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin:8px 0 14px">Split submission: Operator and Lab each fill their own fields separately.</div>' +
         '<form id="hc-form" onsubmit="' + submitFn + '">' +
           '<div class="form-grid">' + fields + '</div>' +
           '<div class="form-actions">' +
             '<button type="submit" id="hc-submit" class="btn btn-primary">Submit ' + role + ' Fields</button>' +
             '<button type="button" class="btn btn-secondary" onclick="viewRun(\'' + esc(runId) + '\')">Cancel</button>' +
-            '<span id="hc-spinner" style="display:none;color:#64748b;font-size:13px">Saving...</span>' +
+            '<span id="hc-spinner" style="display:none;color:var(--muted);font-size:13px">Saving...</span>' +
           '</div>' +
           '<div id="hc-error" class="alert alert-error" style="display:none"></div>' +
           '<div id="hc-success" class="alert alert-success" style="display:none"></div>' +
@@ -66,8 +66,8 @@
 
   function _hcOperatorFields(staff) {
     return '<div class="form-group"><label for="hc-by">Checked By</label><select id="hc-by" name="CHECKED_BY" required>' + _staffOptions(staff, 'Operator') + '</select></div>' +
-      '<div class="form-group"><label for="hc-vol-g">Volume (g)</label><input type="number" id="hc-vol-g" name="VOLUME_G" step="any"></div>' +
-      '<div class="form-group"><label for="hc-vol-ml">Volume (mL)</label><input type="number" id="hc-vol-ml" name="VOLUME_ML" step="any"></div>' +
+      '<div class="form-group"><label for="hc-doi">Innotech DO In</label><input type="number" id="hc-doi" name="INNOTECH_DO_IN" step="any"></div>' +
+      '<div class="form-group"><label for="hc-doo">Innotech DO Out</label><input type="number" id="hc-doo" name="INNOTECH_DO_OUT" step="any"></div>' +
       '<div class="form-group"><label for="hc-torque">Cap Torque</label><input type="number" id="hc-torque" name="CAP_TORQUE" step="any"></div>' +
       '<div class="form-group"><label for="hc-vel">Velcorin (mL/10)</label><input type="number" id="hc-vel" name="VELCORIN" step="any"></div>' +
       '<div class="form-group full-width"><label for="hc-op-notes">Operator Notes</label><textarea id="hc-op-notes" name="OPERATOR_NOTES" rows="2"></textarea></div>';
@@ -75,10 +75,10 @@
 
   function _hcLabFields(staff) {
     return '<div class="form-group"><label for="hc-lab-by">Lab Checked By</label><select id="hc-lab-by" name="LAB_CHECKED_BY" required>' + _staffOptions(staff, 'Lab') + '</select></div>' +
+      '<div class="form-group"><label for="hc-vol-g">Volume (g)</label><input type="number" id="hc-vol-g" name="VOLUME_G" step="any"></div>' +
+      '<div class="form-group"><label for="hc-vol-ml">Volume (mL)</label><input type="number" id="hc-vol-ml" name="VOLUME_ML" step="any"></div>' +
       '<div class="form-group"><label for="hc-bdo">Bottle DO</label><input type="number" id="hc-bdo" name="BOTTLE_DO" step="any"></div>' +
       '<div class="form-group"><label for="hc-bdco2">Bottle DCO2</label><input type="number" id="hc-bdco2" name="BOTTLE_DCO2" step="any"></div>' +
-      '<div class="form-group"><label for="hc-doi">Innotech DO In</label><input type="number" id="hc-doi" name="INNOTECH_DO_IN" step="any"></div>' +
-      '<div class="form-group"><label for="hc-doo">Innotech DO Out</label><input type="number" id="hc-doo" name="INNOTECH_DO_OUT" step="any"></div>' +
       '<div class="form-group full-width"><label for="hc-lab-notes">Lab Notes</label><textarea id="hc-lab-notes" name="LAB_NOTES" rows="2"></textarea></div>';
   }
 
@@ -97,21 +97,21 @@
     var formData = {};
     if (role === 'Operator') {
       formData = {
-        CHECKED_BY:     form.CHECKED_BY.value,
-        VOLUME_G:       form.VOLUME_G.value,
-        VOLUME_ML:      form.VOLUME_ML.value,
-        CAP_TORQUE:     form.CAP_TORQUE.value,
-        VELCORIN:       form.VELCORIN.value,
-        OPERATOR_NOTES: form.OPERATOR_NOTES.value
+        CHECKED_BY:      form.CHECKED_BY.value,
+        INNOTECH_DO_IN:  form.INNOTECH_DO_IN.value,
+        INNOTECH_DO_OUT: form.INNOTECH_DO_OUT.value,
+        CAP_TORQUE:      form.CAP_TORQUE.value,
+        VELCORIN:        form.VELCORIN.value,
+        OPERATOR_NOTES:  form.OPERATOR_NOTES.value
       };
     } else {
       formData = {
-        LAB_CHECKED_BY:  form.LAB_CHECKED_BY.value,
-        BOTTLE_DO:       form.BOTTLE_DO.value,
-        BOTTLE_DCO2:     form.BOTTLE_DCO2.value,
-        INNOTECH_DO_IN:  form.INNOTECH_DO_IN.value,
-        INNOTECH_DO_OUT: form.INNOTECH_DO_OUT.value,
-        LAB_NOTES:       form.LAB_NOTES.value
+        LAB_CHECKED_BY: form.LAB_CHECKED_BY.value,
+        VOLUME_G:       form.VOLUME_G.value,
+        VOLUME_ML:      form.VOLUME_ML.value,
+        BOTTLE_DO:      form.BOTTLE_DO.value,
+        BOTTLE_DCO2:    form.BOTTLE_DCO2.value,
+        LAB_NOTES:      form.LAB_NOTES.value
       };
     }
 

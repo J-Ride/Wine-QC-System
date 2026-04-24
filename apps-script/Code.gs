@@ -185,6 +185,12 @@ function serverSubmitWarehouse(runId, formData) {
     if (!dbResult.success) return dbResult;
     var updateResult = updateRunField(runId, 'WAREHOUSE_APPROVED', 'Yes');
     if (!updateResult.success) return updateResult;
+    try {
+      var summaryResult = populateReportSummary(runId);
+      if (!summaryResult.success) Logger.log('serverSubmitWarehouse: report summary update failed for ' + runId + ': ' + summaryResult.error);
+    } catch (summaryErr) {
+      Logger.log('serverSubmitWarehouse: report summary threw for ' + runId + ': ' + summaryErr.message);
+    }
     var reportResult = appendWarehouse(runId, formData);
     if (!reportResult.success) Logger.log('serverSubmitWarehouse: report write failed: ' + reportResult.error);
     return { success: true };
@@ -251,20 +257,20 @@ function serverSubmitDayOfCheck(runId, sessionId, role, formData) {
           INNOTECH_MORN_CLEAN_NUM:        row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_NUM],
           INNOTECH_MORN_CLEAN_COMPLETED:  row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_COMPLETED],
           INNOTECH_MORN_CLEAN_DATETIME:   row[DOB_COLUMNS.INNOTECH_MORN_CLEAN_DATETIME],
+          INTEGRITY_TEST_DATE:            row[DOB_COLUMNS.INTEGRITY_TEST_DATE],
+          INTEGRITY_TEST_RESULT:          row[DOB_COLUMNS.INTEGRITY_TEST_RESULT],
+          VELCORIN:                       row[DOB_COLUMNS.VELCORIN],
           OPERATOR_APPROVED:              row[DOB_COLUMNS.OPERATOR_APPROVED],
           OPERATOR_NOTES:                 row[DOB_COLUMNS.OPERATOR_NOTES]
         };
         var labData = {
-          LAB_CHECKED_BY:        row[DOB_COLUMNS.LAB_CHECKED_BY],
-          INTEGRITY_TEST_DATE:   row[DOB_COLUMNS.INTEGRITY_TEST_DATE],
-          INTEGRITY_TEST_RESULT: row[DOB_COLUMNS.INTEGRITY_TEST_RESULT],
-          VELCORIN:              row[DOB_COLUMNS.VELCORIN],
-          LAB_ALC:               row[DOB_COLUMNS.LAB_ALC],
-          LAB_DO:                row[DOB_COLUMNS.LAB_DO],
-          LAB_CO2:               row[DOB_COLUMNS.LAB_CO2],
-          LAB_FILL_HEIGHT:       row[DOB_COLUMNS.LAB_FILL_HEIGHT],
-          LAB_APPROVED:          row[DOB_COLUMNS.LAB_APPROVED],
-          LAB_NOTES:             row[DOB_COLUMNS.LAB_NOTES]
+          LAB_CHECKED_BY:  row[DOB_COLUMNS.LAB_CHECKED_BY],
+          LAB_ALC:         row[DOB_COLUMNS.LAB_ALC],
+          LAB_DO:          row[DOB_COLUMNS.LAB_DO],
+          LAB_CO2:         row[DOB_COLUMNS.LAB_CO2],
+          LAB_FILL_HEIGHT: row[DOB_COLUMNS.LAB_FILL_HEIGHT],
+          LAB_APPROVED:    row[DOB_COLUMNS.LAB_APPROVED],
+          LAB_NOTES:       row[DOB_COLUMNS.LAB_NOTES]
         };
         var reportResult = appendDayOfBot(runId, sessionId, operatorData, labData);
         if (!reportResult.success) Logger.log('serverSubmitDayOfCheck: report write failed: ' + reportResult.error);
@@ -285,20 +291,20 @@ function serverSubmitHourlyCheck(runId, sessionId, checkHour, role, formData) {
       var row = _getHourlyRow(runId, checkHour);
       if (row) {
         var operatorData = {
-          CHECKED_BY:     row[HOURLY_COLUMNS.CHECKED_BY],
-          VOLUME_G:       row[HOURLY_COLUMNS.VOLUME_G],
-          VOLUME_ML:      row[HOURLY_COLUMNS.VOLUME_ML],
-          CAP_TORQUE:     row[HOURLY_COLUMNS.CAP_TORQUE],
-          VELCORIN:       row[HOURLY_COLUMNS.VELCORIN],
-          OPERATOR_NOTES: row[HOURLY_COLUMNS.OPERATOR_NOTES]
-        };
-        var labData = {
-          LAB_CHECKED_BY:  row[HOURLY_COLUMNS.LAB_CHECKED_BY],
-          BOTTLE_DO:       row[HOURLY_COLUMNS.BOTTLE_DO],
-          BOTTLE_DCO2:     row[HOURLY_COLUMNS.BOTTLE_DCO2],
+          CHECKED_BY:      row[HOURLY_COLUMNS.CHECKED_BY],
           INNOTECH_DO_IN:  row[HOURLY_COLUMNS.INNOTECH_DO_IN],
           INNOTECH_DO_OUT: row[HOURLY_COLUMNS.INNOTECH_DO_OUT],
-          LAB_NOTES:       row[HOURLY_COLUMNS.LAB_NOTES]
+          CAP_TORQUE:      row[HOURLY_COLUMNS.CAP_TORQUE],
+          VELCORIN:        row[HOURLY_COLUMNS.VELCORIN],
+          OPERATOR_NOTES:  row[HOURLY_COLUMNS.OPERATOR_NOTES]
+        };
+        var labData = {
+          LAB_CHECKED_BY: row[HOURLY_COLUMNS.LAB_CHECKED_BY],
+          VOLUME_G:       row[HOURLY_COLUMNS.VOLUME_G],
+          VOLUME_ML:      row[HOURLY_COLUMNS.VOLUME_ML],
+          BOTTLE_DO:      row[HOURLY_COLUMNS.BOTTLE_DO],
+          BOTTLE_DCO2:    row[HOURLY_COLUMNS.BOTTLE_DCO2],
+          LAB_NOTES:      row[HOURLY_COLUMNS.LAB_NOTES]
         };
         var reportResult = appendHourlyCheck(runId, sessionId, checkHour, operatorData, labData);
         if (!reportResult.success) Logger.log('serverSubmitHourlyCheck: report write failed: ' + reportResult.error);
@@ -310,17 +316,28 @@ function serverSubmitHourlyCheck(runId, sessionId, checkHour, role, formData) {
   }
 }
 
-function serverSubmitStaffRunLog(runId, formData) {
+function serverSubmitStaffRunLog(runId, rowsArray) {
   try {
-    var row = [
-      generateEntryId('SRL'),
-      runId,
-      formData.NAME         || '',
-      formData.ROLE         || '',
-      formData.HOURS_WORKED || '',
-      formData.NOTES        || ''
-    ];
-    return appendToSheet('STAFF RUN LOG', row);
+    if (!Array.isArray(rowsArray) || rowsArray.length === 0) {
+      return { success: false, error: 'No entries to save.' };
+    }
+    for (var i = 0; i < rowsArray.length; i++) {
+      var entry = rowsArray[i];
+      var entryId = generateEntryId('SRL');
+      var row = [
+        entryId,
+        runId,
+        entry.NAME         || '',
+        entry.ROLE         || '',
+        entry.HOURS_WORKED || '',
+        entry.NOTES        || ''
+      ];
+      var result = appendToSheet('STAFF RUN LOG', row);
+      if (!result.success) return result;
+      var reportResult = appendStaffRunLog(runId, entryId, entry);
+      if (!reportResult.success) Logger.log('serverSubmitStaffRunLog: report write failed: ' + reportResult.error);
+    }
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
   }
