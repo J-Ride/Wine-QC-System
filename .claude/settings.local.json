@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(clasp push *)",
+      "Bash(grep -n \"/\\\\*\\\\|^[[:space:]]*//[^/]\" /c/Users/linetechnician_frind/Wine-QC-System/apps-script/*.gs)",
+      "Bash(bash /c/Users/linetechnician_frind/.claude/statusline-command.sh)",
+      "Bash(jq --version)",
+      "Bash(chmod +x *)",
+      "Bash(git -C \"C:/Users/linetechnician_frind/Wine-QC-System\" status --short)",
+      "Bash(git -C \"C:/Users/linetechnician_frind/Wine-QC-System\" add .claude/settings.local.json)"
+    ]
+  }
+}

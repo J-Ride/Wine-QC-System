@@ -1,0 +1,515 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frind Wine Quality Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <?!= include('html/Styles'); ?>
+</head>
+
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <?!= include('html/LogoData'); ?>
+    </div>
+    <span class="nav-title"><span> Frind </span>Wine Quality Control</span>
+  </div>
+  <div class="nav-links">
+    <button id="nav-dashboard" class="nav-btn ghost active" onclick="showSection('dashboard','nav-dashboard')">Dashboard</button>
+    <button id="nav-new-run"   class="nav-btn gold"        onclick="showSection('new-run','nav-new-run')">+ New Run</button>
+  </div>
+</nav>
+
+<main>
+  <!-- Dashboard -->
+  <section id="dashboard-section" class="active">
+    <div class="dashboard-header">
+      <div>
+        <h1>Bottling Runs</h1>
+        <div class="dashboard-subtitle" id="runs-count">Loading...</div>
+      </div>
+      <div class="dashboard-meta">Quality Control Board</div>
+    </div>
+    <div id="dashboard-state">
+      <div class="state-message">Loading runs...</div>
+    </div>
+  </section>
+
+  <!-- New Run -->
+  <section id="new-run-section">
+    <div class="form-page">
+      <div class="form-card">
+        <div class="form-card-header">
+          <div class="form-card-header-top">
+            <div>
+              <h2>New Bottling <em>Run</em></h2>
+              <p>Complete all fields to create a new quality control run</p>
+            </div>
+            <button type="button" class="form-card-close" onclick="closeNewRun()" title="Close">&#215;</button>
+          </div>
+        </div>
+        <div class="form-body">
+          <form id="new-run-form" onsubmit="submitNewRun(event)">
+
+            <div class="form-section-title">Wine Information</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="form-label" for="f-wine">Wine Name <span>*</span></label>
+                <input class="form-input" type="text" id="f-wine" name="WINE" placeholder="e.g. Big White" required>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-vintage">Vintage <span>*</span></label>
+                <input class="form-input" type="number" id="f-vintage" name="VINTAGE" placeholder="e.g. 2024" min="1900" max="2100" required>
+                <span class="form-hint">4-digit year</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-vintrace">Vintrace ID <span>*</span></label>
+                <input class="form-input" type="text" id="f-vintrace" name="VINTRACE_ID" placeholder="e.g. VT-1234" required>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-winemaker">Winemaker <span>*</span></label>
+                <input class="form-input" type="text" id="f-winemaker" name="WINEMAKER" placeholder="e.g. Jane Smith" required>
+              </div>
+            </div>
+
+            <div class="form-section-title">Bottling Details</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="form-label" for="f-tanks">Tank Numbers <span>*</span></label>
+                <input class="form-input" type="text" id="f-tanks" name="TANK_NUMBERS" placeholder="e.g. T1, T2" required>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-volume">Volume <span>*</span></label>
+                <input class="form-input" type="number" id="f-volume" name="VOLUME" placeholder="e.g. 10000" min="0" step="0.01" required>
+                <span class="form-hint">In litres</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-bottling-date">Bottling Date <span>*</span></label>
+                <input class="form-input" type="date" id="f-bottling-date" name="BOTTLING_DATE" required>
+                <span class="form-hint">Format: DD-MM-YYYY</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-num-days">Number of Days <span>*</span></label>
+                <input class="form-input" type="number" id="f-num-days" name="NUM_DAYS" placeholder="e.g. 2" min="1" required>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="closeNewRun()">Cancel</button>
+              <button type="submit" class="btn btn-gold" id="submit-btn">Create Run</button>
+              <span id="submit-spinner" style="display:none; font-size:12px; color:var(--muted);">Saving...</span>
+            </div>
+
+            <div id="form-alert" class="alert"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Run Detail Modal -->
+<div id="run-modal" class="modal-overlay" style="display:none;" onclick="handleModalOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header" id="modal-header">
+      <div class="modal-header-top">
+        <div>
+          <div class="modal-run-id"     id="modal-run-id"></div>
+          <div class="modal-wine-name"  id="modal-wine-name"></div>
+          <div class="modal-vintage"    id="modal-vintage"></div>
+        </div>
+        <button class="modal-close" onclick="handleModalClose()" title="Close">&#215;</button>
+      </div>
+      <div id="modal-status-row"></div>
+    </div>
+    <div class="modal-body">
+      <div id="run-detail-content">
+        <div class="state-message">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Status config (keys match the 5 DB STATUS values) ──────────────
+  var _STATUS_KEY = {
+    'Active':           'active',
+    'Pending Approval': 'pending',
+    'Approved':         'approved',
+    'In Production':    'production',
+    'Completed':        'completed'
+  };
+
+  var _STATUS_CFG = {
+    active:     { label: 'Active',           color: 'oklch(42% 0.13 250)', bg: 'oklch(95% 0.04 250)', dot: 'oklch(48% 0.13 250)', dotA: 'oklch(48% 0.13 250 / 0.35)', countBg: 'oklch(48% 0.13 250 / 0.18)' },
+    pending:    { label: 'Pending Approval', color: 'oklch(58% 0.12 55)',  bg: 'oklch(96% 0.04 70)',  dot: 'oklch(60% 0.13 55)',  dotA: 'oklch(60% 0.13 55  / 0.35)', countBg: 'oklch(60% 0.13 55  / 0.18)' },
+    approved:   { label: 'Approved',         color: 'oklch(40% 0.13 145)', bg: 'oklch(95% 0.04 145)', dot: 'oklch(46% 0.14 145)', dotA: 'oklch(46% 0.14 145 / 0.35)', countBg: 'oklch(46% 0.14 145 / 0.18)' },
+    production: { label: 'In Production',    color: 'oklch(38% 0.09 10)',  bg: 'oklch(95% 0.03 20)',  dot: 'oklch(52% 0.11 10)',  dotA: 'oklch(52% 0.11 10  / 0.35)', countBg: 'oklch(52% 0.11 10  / 0.18)' },
+    completed:  { label: 'Completed',        color: 'oklch(50% 0.01 220)', bg: 'oklch(94% 0.005 220)',dot: 'oklch(62% 0.01 220)', dotA: 'oklch(62% 0.01 220 / 0.35)', countBg: 'oklch(62% 0.01 220 / 0.18)' }
+  };
+
+  var _COLUMNS = [
+    { db: 'Active',           key: 'active' },
+    { db: 'Pending Approval', key: 'pending' },
+    { db: 'Approved',         key: 'approved' },
+    { db: 'In Production',    key: 'production' },
+    { db: 'Completed',        key: 'completed' }
+  ];
+  var _modalState = { view: 'run', runId: null };
+
+  // ── Navigation ────────────────────────────────────────────────────
+  function showSection(name, navId) {
+    document.querySelectorAll('section').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById(name + '-section').classList.add('active');
+    if (navId) {
+      var btn = document.getElementById(navId);
+      if (btn) btn.classList.add('active');
+    }
+  }
+
+  function closeNewRun() {
+    resetNewRunForm();
+    showSection('dashboard', 'nav-dashboard');
+  }
+
+  function goToDashboard() {
+    document.getElementById('run-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    _modalState = { view: 'run', runId: null };
+    showSection('dashboard', 'nav-dashboard');
+  }
+
+  function handleModalClose() {
+    if (_modalState.view === 'form' && _modalState.runId) {
+      viewRun(_modalState.runId);
+      return;
+    }
+    goToDashboard();
+  }
+
+  function handleModalOverlayClick(event) {
+    if (event.target === document.getElementById('run-modal')) handleModalClose();
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────
+  function loadDashboard() {
+    document.getElementById('runs-count').textContent = 'Loading...';
+    document.getElementById('dashboard-state').innerHTML = '<div class="state-message">Loading runs...</div>';
+    google.script.run
+      .withSuccessHandler(onRunsLoaded)
+      .withFailureHandler(onRunsError)
+      .serverGetAllRuns();
+  }
+
+  function onRunsLoaded(result) {
+    if (!result) {
+      document.getElementById('runs-count').textContent = 'Error';
+      document.getElementById('dashboard-state').innerHTML = '<div class="state-message error">Server returned empty response.</div>';
+      return;
+    }
+    if (!result.success) { onRunsError(result.error); return; }
+    var runs = result.data || [];
+    document.getElementById('runs-count').textContent =
+      runs.length + ' run' + (runs.length === 1 ? '' : 's') + ' · ' + _todayLabel();
+    document.getElementById('dashboard-state').innerHTML = _buildKanbanHtml(runs);
+  }
+
+  function onRunsError(err) {
+    document.getElementById('runs-count').textContent = 'Error';
+    document.getElementById('dashboard-state').innerHTML =
+      '<div class="state-message error">Failed to load runs: ' + esc(String(err)) + '</div>';
+  }
+
+  function _todayLabel() {
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var d = new Date();
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  // ── Kanban builders ───────────────────────────────────────────────
+  function _buildKanbanHtml(runs) {
+    var tabs = _COLUMNS.map(function(col, index) {
+      var colRuns = runs.filter(function(r) { return r.STATUS === col.db; });
+      var cfg = _STATUS_CFG[col.key];
+      return '<button class="col-tab' + (index === 0 ? ' active' : '') + '" data-col-key="' + col.key + '" onclick="showKanbanColumn(\'' + col.key + '\')">' +
+        '<span class="col-tab-dot" style="background:' + cfg.dot + '"></span>' +
+        '<span class="col-tab-label">' + cfg.label + '</span>' +
+        '<span class="col-tab-count">' + colRuns.length + '</span>' +
+      '</button>';
+    }).join('');
+
+    var cols = _COLUMNS.map(function(col) {
+      var colRuns = runs.filter(function(r) { return r.STATUS === col.db; });
+      var cfg = _STATUS_CFG[col.key];
+      var pill = '<span class="col-pill" style="background:' + cfg.bg + ';border:1px solid ' + cfg.dotA + ';color:' + cfg.color + '">' +
+        '<span class="col-dot" style="background:' + cfg.dot + '"></span>' +
+        '<span class="kanban-col-title">' + cfg.label + '</span>' +
+        '<span class="col-count" style="background:' + cfg.countBg + ';color:' + cfg.color + '">' + colRuns.length + '</span>' +
+        '</span>';
+      var body = colRuns.length === 0
+        ? '<div class="empty-col"><div><div class="empty-col-icon">◇</div><div class="empty-col-text">No runs here yet</div></div></div>'
+        : colRuns.map(function(r) { return _buildRunCardHtml(r); }).join('');
+      return '<div class="kanban-col' + (col.key === 'active' ? ' mobile-active' : '') + '" data-col-key="' + col.key + '">' +
+        '<div class="kanban-col-header">' + pill + '</div>' +
+        '<div class="kanban-col-cards"><div class="kanban-col-body">' + body + '</div></div>' +
+        '</div>';
+    }).join('');
+    return '<div class="col-tabs">' + tabs + '</div><div class="kanban-wrap"><div class="kanban">' + cols + '</div></div>';
+  }
+
+  function showKanbanColumn(key) {
+    document.querySelectorAll('.col-tab').forEach(function(tab) {
+      tab.classList.toggle('active', tab.getAttribute('data-col-key') === key);
+    });
+    document.querySelectorAll('.kanban-col').forEach(function(col) {
+      col.classList.toggle('mobile-active', col.getAttribute('data-col-key') === key);
+    });
+  }
+
+  function _buildRunCardHtml(run) {
+    var cfg  = _STATUS_CFG[_STATUS_KEY[run.STATUS] || 'completed'];
+    var date = run.BOTTLING_DATE ? formatDisplayDate(run.BOTTLING_DATE) : '--';
+    var vol  = run.VOLUME ? Number(run.VOLUME).toLocaleString('en-CA') + ' L' : '--';
+    var winemaker = run.WINEMAKER ? String(run.WINEMAKER).split(/\s+/)[0] : '--';
+    var pill = '<span class="status-pill" style="background:' + cfg.bg + ';color:' + cfg.color + '">' + esc(cfg.label) + '</span>';
+    return '<div class="run-card" onclick="viewRun(\'' + esc(run.RUN_ID) + '\')">' +
+      '<div class="run-card-id">' + esc(run.RUN_ID) + '</div>' +
+      '<div class="run-card-wine">' + esc(run.WINE) + '</div>' +
+      '<div class="run-card-vintage">' + esc(String(run.VINTAGE)) + '</div>' +
+      '<div class="run-card-divider"></div>' +
+      '<div class="run-card-meta">' +
+        '<div class="run-card-row"><span class="run-card-label">Bottling</span><span class="run-card-value">' + date + '</span></div>' +
+        '<div class="run-card-row"><span class="run-card-label">Winemaker</span><span class="run-card-value">' + esc(winemaker) + '</span></div>' +
+        '<div class="run-card-row"><span class="run-card-label">Volume</span><span class="run-card-value">' + vol + '</span></div>' +
+      '</div>' +
+      '<div class="run-card-footer">' + pill + '</div>' +
+      '</div>';
+  }
+
+  // ── Run Detail Modal ──────────────────────────────────────────────
+  function viewRun(runId) {
+    var modal = document.getElementById('run-modal');
+    _modalState = { view: 'run', runId: runId };
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modal-run-id').textContent    = '';
+    document.getElementById('modal-wine-name').textContent = '';
+    document.getElementById('modal-vintage').textContent   = '';
+    document.getElementById('modal-status-row').innerHTML  = '';
+    document.getElementById('run-detail-content').innerHTML =
+      '<div class="state-message">Loading ' + esc(runId) + '...</div>';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result || !result.success) {
+          document.getElementById('run-detail-content').innerHTML =
+            '<div class="state-message error">Failed to load run: ' +
+            esc(result && result.error ? result.error : 'Unknown error') + '</div>';
+          return;
+        }
+        _renderModal(result.data);
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('run-detail-content').innerHTML =
+          '<div class="state-message error">Server error: ' + esc(String(err)) + '</div>';
+      })
+      .serverGetRunById(runId);
+  }
+
+  function _renderModal(run) {
+    // Set _rdCurrentRunId so form files can reference the current run
+    _rdCurrentRunId = run.RUN_ID;
+
+    // Populate header
+    var cfg = _STATUS_CFG[_STATUS_KEY[run.STATUS] || 'completed'];
+    document.getElementById('modal-run-id').textContent    = run.RUN_ID;
+    document.getElementById('modal-wine-name').textContent = run.WINE;
+    document.getElementById('modal-vintage').textContent   = String(run.VINTAGE) + ' Vintage';
+    document.getElementById('modal-status-row').innerHTML  =
+      '<span class="modal-status-pill" style="color:' + cfg.color + ';background:' + cfg.bg + ';border:1px solid ' + cfg.dotA + '">' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:' + cfg.dot + ';display:inline-block;flex-shrink:0;"></span>' +
+      esc(cfg.label) + '</span>';
+
+    // Populate body
+    document.getElementById('run-detail-content').innerHTML = _buildModalBody(run);
+  }
+
+  function _buildModalBody(run) {
+    var bottlingDate = run.BOTTLING_DATE ? formatDisplayDate(run.BOTTLING_DATE) : '--';
+    var createdDate  = run.CREATED_DATE  ? formatDisplayDate(run.CREATED_DATE)  : '--';
+    var topSection   = typeof _buildModalTopSection === 'function' ? _buildModalTopSection(run) : '';
+    var bottomActions = typeof _buildModalBottomActionPanel === 'function'
+      ? _buildModalBottomActionPanel(run)
+      : _buildActionPanel(run);
+
+    // Detail grid
+    var cells = [
+      ['Run ID',        esc(run.RUN_ID       || '--')],
+      ['Vintrace ID',   esc(run.VINTRACE_ID  || '--')],
+      ['Vintage',       esc(String(run.VINTAGE || '--'))],
+      ['Volume',        esc(String(run.VOLUME || '--')) + ' L'],
+      ['Tanks',         esc(run.TANK_NUMBERS || '--')],
+      ['Bottling Date', bottlingDate],
+      ['Days',          esc(String(run.NUM_DAYS || '--'))],
+      ['Winemaker',     esc(run.WINEMAKER    || '--')],
+      ['Created Date',  createdDate]
+    ].map(function(c) {
+      return '<div class="modal-detail-cell">' +
+        '<div class="modal-detail-cell-label">' + c[0] + '</div>' +
+        '<div class="modal-detail-cell-value">' + c[1] + '</div>' +
+        '</div>';
+    }).join('') + '<div class="modal-detail-cell modal-detail-cell-empty"></div>';
+
+    // Links
+    var reportVal = (run.REPORT_LINK && run.REPORT_LINK !== 'PENDING' && run.REPORT_LINK !== '')
+      ? '<span class="modal-link-open"><a href="' + esc(run.REPORT_LINK) + '" target="_blank">Open →</a></span>'
+      : '<span class="modal-link-pending">Pending</span>';
+    var folderVal = (run.FOLDER_LINK && run.FOLDER_LINK !== 'PENDING' && run.FOLDER_LINK !== '')
+      ? '<span class="modal-link-open"><a href="' + esc(run.FOLDER_LINK) + '" target="_blank">Open →</a></span>'
+      : '<span class="modal-link-pending">Pending</span>';
+
+    return '' +
+      (topSection
+        ? '<div class="modal-section">' + topSection + '</div>' +
+          '<div class="modal-section-divider"></div>'
+        : '') +
+      '<div class="modal-section">' +
+        '<div class="modal-section-title">Run Details</div>' +
+        '<div class="modal-detail-grid">' + cells + '</div>' +
+      '</div>' +
+      '<div class="modal-section">' +
+        '<div class="modal-section-title">Approvals</div>' +
+        _buildModalApprovalSummary(run) +
+      '</div>' +
+      '<div class="modal-section">' +
+        '<div class="modal-section-title">Links</div>' +
+        '<div class="modal-links-stack">' +
+          '<div class="modal-link-card"><div class="modal-link-left"><span class="modal-link-icon">&#128196;</span><span class="modal-link-label-plain">Report</span></div>' + reportVal + '</div>' +
+          '<div class="modal-link-card"><div class="modal-link-left"><span class="modal-link-icon">&#128193;</span><span class="modal-link-label-plain">Drive Folder</span></div>' + folderVal + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-section-divider"></div>' +
+      '<div class="modal-bottom-actions">' +
+        bottomActions +
+      '</div>' +
+      '<div id="rd-spinner" class="rd-spinner">Working...</div>' +
+      '<div id="rd-action-error" class="rd-action-error"></div>' +
+      (run.STATUS === 'Completed'
+        ? '<div class="modal-note">This run is complete. Links remain available above for quick access.</div>'
+        : '');
+  }
+
+  // ── New Run form ──────────────────────────────────────────────────
+  function submitNewRun(event) {
+    event.preventDefault();
+    var form    = document.getElementById('new-run-form');
+    var btn     = document.getElementById('submit-btn');
+    var spinner = document.getElementById('submit-spinner');
+    hideAlert();
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+    var formData = {
+      WINE:          form.WINE.value.trim(),
+      VINTAGE:       form.VINTAGE.value,
+      VINTRACE_ID:   form.VINTRACE_ID.value.trim(),
+      TANK_NUMBERS:  form.TANK_NUMBERS.value.trim(),
+      VOLUME:        form.VOLUME.value,
+      BOTTLING_DATE: form.BOTTLING_DATE.value,
+      NUM_DAYS:      form.NUM_DAYS.value,
+      WINEMAKER:     form.WINEMAKER.value.trim()
+    };
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        if (result.success) {
+          form.reset();
+          showToast('Run ' + result.data.RUN_ID + ' created successfully');
+          loadDashboard();
+          closeNewRun();
+        } else {
+          showAlert('error', result.error || 'Unknown error creating run.');
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        showAlert('error', 'Server error: ' + String(err));
+      })
+      .serverCreateRun(formData);
+  }
+
+  function resetNewRunForm() {
+    document.getElementById('new-run-form').reset();
+    hideAlert();
+  }
+
+  function showAlert(type, message) {
+    var el = document.getElementById('form-alert');
+    el.className = 'alert visible alert-' + type;
+    el.textContent = message;
+  }
+
+  function hideAlert() {
+    var el = document.getElementById('form-alert');
+    el.className = 'alert';
+    el.textContent = '';
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  function showToast(message) {
+    var existing = document.getElementById('app-toast');
+    if (existing) existing.remove();
+    var t = document.createElement('div');
+    t.id = 'app-toast';
+    t.className = 'toast';
+    t.innerHTML = '<span class="toast-icon">&#10003;</span>' + esc(message);
+    document.body.appendChild(t);
+    setTimeout(function() { if (t.parentNode) t.remove(); }, 3000);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function statusBadge(status) {
+    var cfg = _STATUS_CFG[_STATUS_KEY[status] || 'completed'];
+    return '<span class="status-pill" style="background:' + cfg.bg + ';color:' + cfg.color + '">' + esc(cfg.label) + '</span>';
+  }
+
+  function formatDisplayDate(val) {
+    if (!val) return '--';
+    var d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    var dd   = String(d.getDate()).padStart(2, '0');
+    var mm   = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '-' + mm + '-' + d.getFullYear();
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  loadDashboard();
+</script>
+
+<?!= include('html/RunDetail'); ?>
+<?!= include('html/LabPreBot'); ?>
+<?!= include('html/WarehouseCheck'); ?>
+<?!= include('html/DayBeforeCheck'); ?>
+<?!= include('html/DayOfCheck'); ?>
+<?!= include('html/HourlyCheck'); ?>
+<?!= include('html/StaffRunLog'); ?>
+
+</body>
+</html>

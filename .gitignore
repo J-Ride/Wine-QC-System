@@ -1,0 +1,17 @@
+# clasp credentials (machine-specific, never commit)
+.clasp.json
+.clasprc.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor (optional - remove if you want to track VS Code settings)
+.vscode/
+
+# Node (in case any tooling gets added)
+node_modules/
+
+# Secrets
+*.credentials.json
+token.json
