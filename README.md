@@ -1,10 +1,24 @@
-﻿# Wine Quality Control System
+# Wine Quality Control System
+### Built with Google Apps Script | Google Sheets | Google Drive | Gmail | clasp | GitHub
 
 A full-stack Google Workspace automation that replaced a manual paper-based bottling QC process at a real winery - tracking runs from lab checks to production completion with automated reporting, email notifications, and audit trails.
 
 ![Built with Google Apps Script](https://img.shields.io/badge/Built%20with-Google%20Apps%20Script-4285F4?style=flat)
 ![Google Workspace](https://img.shields.io/badge/Platform-Google%20Workspace-34A853?style=flat)
 ![Deployed in Production](https://img.shields.io/badge/Status-Deployed%20in%20Production-brightgreen?style=flat)
+
+---
+
+## Demo
+
+**[Watch the Walkthrough](#)** ← Replace with your Loom or YouTube URL
+
+---
+
+## Dashboard Overview
+
+![Kanban Dashboard](screenshots/dashboard-overview.png)
+*The Kanban dashboard showing bottling runs distributed across five status columns — Active, Pending Approval, Approved, In Production, and Completed.*
 
 ---
 
@@ -38,6 +52,88 @@ Multi-day runs are fully supported: after each production session ends, the run 
 
 ---
 
+## Workflow Architecture
+
+```
+New Run Created (web form)
+    └── Drive folder + Bottling Report copy created automatically
+            └── Lab Pre-Bot checks (multi-entry, any time)
+            └── Warehouse check (single sign-off)
+                    └── Send for Approval
+                            └── Winemaker approves (email notification)
+                            └── Lab Manager approves (email notification)
+                                    └── Status → Approved
+                                            └── Day Before Check (lab)
+                                            └── Day Of Check (operator + lab split-submission)
+                                                    └── Start Production
+                                                            └── Hourly trigger fires every hour
+                                                            └── Email → Lab form link + Operator form link
+                                                            └── Both submissions merge into one row
+                                                    └── End Production → back to Approved (multi-day)
+                                            └── Run Complete
+                                                    └── Bottling Report finalized
+                                                    └── Drive folder archived to Completed Runs
+                                                    └── Completion email with report link sent
+```
+
+---
+
+## Screenshots
+
+### Run Detail Modal — Active State
+![Run Detail Active](screenshots/run-detail-active.png)
+*Clicking a run card opens a modal showing full run details, approval status, and context-aware action buttons. Available actions change based on the current status.*
+
+### Run Detail Modal — Pending Approval
+![Run Detail Pending](screenshots/run-detail-pending.png)
+*When a run is pending approval, the Winemaker and Lab Manager each see their individual approval button. The system tracks which approvals are complete and auto-promotes the run when both are received.*
+
+### New Run Form
+![New Run Form](screenshots/new-run-form.png)
+*The New Run form. On submission, the system generates a unique Run ID, creates a Drive folder, copies the Bottling Report template, and notifies all relevant staff.*
+
+### Check Form — Lab Pre-Bottling
+![Lab Pre-Bot Form](screenshots/lab-prebot-form.png)
+*The Lab Pre-Bottling check form. Multiple entries can be submitted over days or weeks. Each submission writes to both the master database and the Bottling Report Lab Pre-Bot tab simultaneously.*
+
+### Check Form — Day Of Check (Split-Submission)
+![Day Of Check](screenshots/day-of-check-form.png)
+*The Day-of-Bottling check uses a split-submission pattern. The operator and lab tech each receive a separate form link showing only their fields. Both submissions merge into one database row — the row is marked complete only when both have submitted.*
+
+### Hourly Check Reminder Email
+![Hourly Email](screenshots/hourly-reminder-email.png)
+*The automated hourly reminder email sent during production. Each email contains direct form links pre-keyed to the run ID, session ID, and check hour. The lab link shows lab fields; the operator link shows operator fields.*
+
+### Hourly Check Form — Operator View
+![Hourly Check Operator](screenshots/hourly-check-operator.png)
+*The operator's hourly check form showing machine readings: Innotech DO In/Out, cap torque, Velcorin dosing.*
+
+### Hourly Check Form — Lab View
+![Hourly Check Lab](screenshots/hourly-check-lab.png)
+*The lab's hourly check form showing analytical readings: fill volume (g and mL), Bottle DO, Bottle DCO2.*
+
+### Bottling Report — Run Summary Tab
+![Bottling Report Summary](screenshots/bottling-report-summary.png)
+*The Bottling Report is a Google Sheet copied from a template on run creation. The Run Summary tab is populated automatically with run details and approval status, and updated again on completion.*
+
+### Bottling Report — Hourly Checks Tab
+![Bottling Report Hourly](screenshots/bottling-report-hourly.png)
+*The Hourly Checks tab in the Bottling Report, showing merged operator and lab data across all production hours. All data is written automatically — no manual entry into the report at any point.*
+
+### Master Database — RUNS Sheet
+![Master Database](screenshots/master-database-runs.png)
+*The RUNS sheet in the Bottling Master Database. Every run, every status change, every approval timestamp, and every Drive link is stored here. The database grows with every run and is immediately available for trend analysis.*
+
+### Google Drive — Active Runs Folder
+![Drive Structure](screenshots/drive-folder-structure.png)
+*The Drive folder structure created automatically on run creation. Each run gets its own named subfolder containing the Bottling Report and a Supporting Documents folder. On completion, the folder moves to Completed Runs automatically.*
+
+### Apps Script Trigger Management
+![Trigger Management](screenshots/apps-script-triggers.png)
+*The Apps Script Triggers panel showing a live hourly trigger for an active production session. The trigger is created when production starts and deleted automatically when the session ends.*
+
+---
+
 ## Key Technical Features
 
 - **Google Apps Script web app** served via `HtmlService` - no external hosting, no server to maintain
@@ -58,7 +154,7 @@ Every action in the system - lab checks, approvals, hourly readings, session tim
 
 Because all records live in Google Sheets, the full dataset is immediately available for analysis without any export or ETL process. Pivot tables, charts, and dashboards can be built directly on live production data - tracking chemistry trends across vintages, equipment performance via DO and torque readings, approval turnaround times, and seasonal volume patterns.
 
-The same architecture applies to any operatiosn that currently runs on manual records and verbal sign-offs.
+The same architecture applies to any operation that currently runs on manual records and verbal sign-offs.
 
 ---
 
@@ -71,11 +167,11 @@ Browser (HtmlService)
         v
 Code.gs (server bridge - one wrapper per server function)
         |
-        +---> RunManager.gs    (status transitions, validation)
-        +---> Database.gs      (all Sheets read/write, column maps)
-        +---> DriveManager.gs  (folder creation, archiving)
-        +---> EmailService.gs  (notifications, hourly reminders)
-        +---> ReportService.gs (Bottling Report tab population)
+        +---> RunManager.gs     (status transitions, validation)
+        +---> Database.gs       (all Sheets read/write, column maps)
+        +---> DriveManager.gs   (folder creation, archiving)
+        +---> EmailService.gs   (notifications, hourly reminders)
+        +---> ReportService.gs  (Bottling Report tab population)
         +---> HourlyTriggers.gs (trigger lifecycle management)
         |
         v
@@ -183,37 +279,67 @@ Each production day creates a `PRODUCTION SESSIONS` row keyed by a Session ID (`
 ```
 Wine-QC-System/
 ├── apps-script/
-│   ├── Code.gs              - doGet() entry point; server bridge wrappers for all client-callable functions
-│   ├── Config.gs            - PropertiesService setup; getConfig(), getSpreadsheet(), getSheet() helpers
-│   ├── Database.gs          - All Sheets read/write; column index maps; row-to-object mappers
-│   ├── RunManager.gs        - Run creation, status transitions (Active -> Pending -> Approved -> In Production -> Completed)
-│   ├── ApprovalService.gs   - Dual-approval logic (Winemaker + Lab Manager)
-│   ├── DriveManager.gs      - Drive folder creation on run start; folder archiving on completion
-│   ├── EmailService.gs      - Approval notifications; hourly check reminder emails with form links
-│   ├── HourlyTriggers.gs    - Installable trigger create/delete lifecycle; orphan cleanup
-│   ├── ReportService.gs     - Bottling Report tab population (one function per check type)
-│   ├── Utils.gs             - Date formatting (America/Vancouver), entry ID generation
-│   ├── appsscript.json      - Apps Script manifest (V8 runtime, OAuth scopes)
+│   ├── Code.gs                 - doGet() entry point; server bridge wrappers for all client-callable functions
+│   ├── Config.gs               - PropertiesService setup; getConfig(), getSpreadsheet(), getSheet() helpers
+│   ├── Database.gs             - All Sheets read/write; column index maps; row-to-object mappers
+│   ├── RunManager.gs           - Run creation, status transitions (Active -> Pending -> Approved -> In Production -> Completed)
+│   ├── DriveManager.gs         - Drive folder creation on run start; folder archiving on completion
+│   ├── EmailService.gs         - Approval notifications; hourly check reminder emails with form links
+│   ├── HourlyTriggers.gs       - Installable trigger create/delete lifecycle; orphan cleanup
+│   ├── ReportService.gs        - Bottling Report tab population (one function per check type)
+│   ├── Utils.gs                - Date formatting (America/Vancouver), entry ID generation
+│   ├── appsscript.json         - Apps Script manifest (V8 runtime, OAuth scopes)
 │   └── html/
-│       ├── Index.html       - Shell page; loads all view partials, handles client-side routing
-│       ├── Styles.html      - Global CSS (design system, component styles)
-│       ├── LogoData.html    - Base64 logo asset
-│       ├── RunDetail.html   - Run detail modal (status, approvals, check history)
-│       ├── LabPreBot.html   - Lab Pre-Bottling check form
+│       ├── Index.html          - Shell page; loads all view partials, handles client-side routing
+│       ├── Styles.html         - Global CSS (design system, component styles)
+│       ├── LogoData.html       - Base64 logo asset
+│       ├── RunDetail.html      - Run detail modal (status, approvals, check history)
+│       ├── LabPreBot.html      - Lab Pre-Bottling check form
 │       ├── WarehouseCheck.html - Warehouse check form
 │       ├── DayBeforeCheck.html - Day-before lab check form
-│       ├── DayOfCheck.html  - Day-of split-submission check form (lab + operator)
-│       ├── HourlyCheck.html - Hourly split-submission check form (lab + operator)
-│       └── StaffRunLog.html - Production staff hours log (multi-row entry)
+│       ├── DayOfCheck.html     - Day-of split-submission check form (lab + operator)
+│       ├── HourlyCheck.html    - Hourly split-submission check form (lab + operator)
+│       └── StaffRunLog.html    - Production staff hours log (multi-row entry)
 ├── docs/
-│   ├── README.md            - This file
-│   ├── database-schema.md   - Column definitions for all 9 sheets
-│   ├── status-flow.md       - Run lifecycle state machine documentation
-│   ├── architecture.md      - System architecture notes
-│   └── deployment.md        - Deployment checklist
+│   ├── README.md               - This file
+│   ├── database-schema.md      - Column definitions for all 9 sheets
+│   ├── status-flow.md          - Run lifecycle state machine documentation
+│   ├── architecture.md         - System architecture notes
+│   └── deployment.md           - Deployment checklist
 └── .gitignore
 ```
 
 ---
 
+## Screenshots Checklist
 
+All screenshots live in `screenshots/` in the repo root. Capture these in order — they follow the natural workflow of the app:
+
+| File | What to capture |
+|---|---|
+| `dashboard-overview.png` | Full dashboard with runs spread across multiple status columns |
+| `run-detail-active.png` | Run detail modal open on an Active run — show the action buttons |
+| `run-detail-pending.png` | Run detail modal on a Pending Approval run — show both approval buttons |
+| `new-run-form.png` | New Run form filled in, before hitting Create |
+| `lab-prebot-form.png` | Lab Pre-Bot form open |
+| `day-of-check-form.png` | Day-of Check operator form, with fields filled |
+| `hourly-reminder-email.png` | The automated hourly reminder email in an inbox |
+| `hourly-check-operator.png` | Hourly Check form — operator view |
+| `hourly-check-lab.png` | Hourly Check form — lab view |
+| `bottling-report-summary.png` | Bottling Report Run Summary tab with data populated |
+| `bottling-report-hourly.png` | Bottling Report Hourly Checks tab showing merged rows |
+| `master-database-runs.png` | RUNS sheet in the master database with several runs listed |
+| `drive-folder-structure.png` | Drive folder showing Active Runs with a run subfolder open |
+| `apps-script-triggers.png` | Apps Script Triggers panel with a live hourly trigger visible |
+
+**Video walkthrough suggestions (for Loom or YouTube):**
+1. Create a new run — show the Drive folder appear in real time
+2. Complete the approval flow — show status change and email arriving
+3. Start production — show the trigger appear in the Apps Script panel
+4. Submit an hourly check as both operator and lab — show the merged row in the database
+5. Complete a run — show the folder move from Active to Completed in Drive
+
+---
+
+*Part of Jordan Rideout's Automation Portfolio*
+*Built to demonstrate real-world automation capability for operations and AI enablement roles*
