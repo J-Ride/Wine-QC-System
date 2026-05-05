@@ -102,7 +102,9 @@ New Run Created (web form)
 *The Lab Pre-Bottling check form. Multiple entries can be submitted over days or weeks. Each submission writes to both the master database and the Bottling Report Lab Pre-Bot tab simultaneously.*
 
 ### Check Form — Day Of Check (Split-Submission)
-![Day Of Check](screenshots/day-of-check-form.png)
+| Operator Form | Lab Form |
+|---|---|
+| ![Day Of Check Operator](screenshots/day-of-check-form.png) | ![Day Of Check Lab](screenshots/day-of-check-lab.png) |
 
 *The Day-of-Bottling check uses a split-submission pattern. The operator and lab tech each receive a separate form link showing only their fields. Both submissions merge into one database row — the row is marked complete only when both have submitted.*
 
