@@ -233,7 +233,7 @@ Each production day creates a `PRODUCTION SESSIONS` row keyed by a Session ID (`
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/Wine-QC-System.git
+   git clone https://github.com/J-Ride/Wine-QC-System.git
    cd Wine-QC-System/apps-script
    ```
 
