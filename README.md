@@ -11,7 +11,8 @@ A full-stack Google Workspace automation that replaced a manual paper-based bott
 
 ## Demo
 
-**[Watch the Walkthrough](#)** ← Replace with your Loom or YouTube URL
+[![Watch the Demo](https://img.youtube.com/vi/Ilz1OeemCuE/maxresdefault.jpg)](https://www.youtube.com/watch?v=Ilz1OeemCuE)
+*Click to watch the full walkthrough — run creation, approval workflow, production checks, and automated reporting.*
 
 ---
 
@@ -125,7 +126,9 @@ New Run Created (web form)
 *The RUNS sheet in the Bottling Master Database. Every run, every status change, every approval timestamp, and every Drive link is stored here. The database grows with every run and is immediately available for trend analysis.*
 
 ### Google Drive — Active Runs Folder
-![Drive Structure](screenshots/drive-folder-structure.png)
+![Main Drive Structure](screenshots/drive-folder-structure.png)
+![Active Run Drive Structure](screenshots/drive-folder-structure2.png)
+![Run Folder Structure](screenshots/drive-folder-structure3.png)
 *The Drive folder structure created automatically on run creation. Each run gets its own named subfolder containing the Bottling Report and a Supporting Documents folder. On completion, the folder moves to Completed Runs automatically.*
 
 ### Apps Script Trigger Management
@@ -309,35 +312,6 @@ Wine-QC-System/
 └── .gitignore
 ```
 
----
-
-## Screenshots Checklist
-
-All screenshots live in `screenshots/` in the repo root. Capture these in order — they follow the natural workflow of the app:
-
-| File | What to capture |
-|---|---|
-| `dashboard-overview.png` | Full dashboard with runs spread across multiple status columns |
-| `run-detail-active.png` | Run detail modal open on an Active run — show the action buttons |
-| `run-detail-pending.png` | Run detail modal on a Pending Approval run — show both approval buttons |
-| `new-run-form.png` | New Run form filled in, before hitting Create |
-| `lab-prebot-form.png` | Lab Pre-Bot form open |
-| `day-of-check-form.png` | Day-of Check operator form, with fields filled |
-| `hourly-reminder-email.png` | The automated hourly reminder email in an inbox |
-| `hourly-check-operator.png` | Hourly Check form — operator view |
-| `hourly-check-lab.png` | Hourly Check form — lab view |
-| `bottling-report-summary.png` | Bottling Report Run Summary tab with data populated |
-| `bottling-report-hourly.png` | Bottling Report Hourly Checks tab showing merged rows |
-| `master-database-runs.png` | RUNS sheet in the master database with several runs listed |
-| `drive-folder-structure.png` | Drive folder showing Active Runs with a run subfolder open |
-| `apps-script-triggers.png` | Apps Script Triggers panel with a live hourly trigger visible |
-
-**Video walkthrough suggestions (for Loom or YouTube):**
-1. Create a new run — show the Drive folder appear in real time
-2. Complete the approval flow — show status change and email arriving
-3. Start production — show the trigger appear in the Apps Script panel
-4. Submit an hourly check as both operator and lab — show the merged row in the database
-5. Complete a run — show the folder move from Active to Completed in Drive
 
 ---
 
