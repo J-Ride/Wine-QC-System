@@ -15,3 +15,5 @@ node_modules/
 # Secrets
 *.credentials.json
 token.json
+
+*.mp4
