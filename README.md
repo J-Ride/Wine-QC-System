@@ -83,56 +83,69 @@ New Run Created (web form)
 
 ### Run Detail Modal — Active State
 ![Run Detail Active](screenshots/run-detail-active.png)
+
 *Clicking a run card opens a modal showing full run details, approval status, and context-aware action buttons. Available actions change based on the current status.*
 
 ### Run Detail Modal — Pending Approval
 ![Run Detail Pending](screenshots/run-detail-pending.png)
+
 *When a run is pending approval, the Winemaker and Lab Manager each see their individual approval button. The system tracks which approvals are complete and auto-promotes the run when both are received.*
 
 ### New Run Form
 ![New Run Form](screenshots/new-run-form.png)
+
 *The New Run form. On submission, the system generates a unique Run ID, creates a Drive folder, copies the Bottling Report template, and notifies all relevant staff.*
 
 ### Check Form — Lab Pre-Bottling
 ![Lab Pre-Bot Form](screenshots/lab-prebot-form.png)
+
 *The Lab Pre-Bottling check form. Multiple entries can be submitted over days or weeks. Each submission writes to both the master database and the Bottling Report Lab Pre-Bot tab simultaneously.*
 
 ### Check Form — Day Of Check (Split-Submission)
 ![Day Of Check](screenshots/day-of-check-form.png)
+
 *The Day-of-Bottling check uses a split-submission pattern. The operator and lab tech each receive a separate form link showing only their fields. Both submissions merge into one database row — the row is marked complete only when both have submitted.*
 
 ### Hourly Check Reminder Email
 ![Hourly Email](screenshots/hourly-reminder-email.png)
+
 *The automated hourly reminder email sent during production. Each email contains direct form links pre-keyed to the run ID, session ID, and check hour. The lab link shows lab fields; the operator link shows operator fields.*
 
 ### Hourly Check Form — Operator View
 ![Hourly Check Operator](screenshots/hourly-check-operator.png)
+
 *The operator's hourly check form showing machine readings: Innotech DO In/Out, cap torque, Velcorin dosing.*
 
 ### Hourly Check Form — Lab View
 ![Hourly Check Lab](screenshots/hourly-check-lab.png)
+
 *The lab's hourly check form showing analytical readings: fill volume (g and mL), Bottle DO, Bottle DCO2.*
 
 ### Bottling Report — Run Summary Tab
 ![Bottling Report Summary](screenshots/bottling-report-summary.png)
+
 *The Bottling Report is a Google Sheet copied from a template on run creation. The Run Summary tab is populated automatically with run details and approval status, and updated again on completion.*
 
 ### Bottling Report — Hourly Checks Tab
 ![Bottling Report Hourly](screenshots/bottling-report-hourly.png)
+
 *The Hourly Checks tab in the Bottling Report, showing merged operator and lab data across all production hours. All data is written automatically — no manual entry into the report at any point.*
 
 ### Master Database — RUNS Sheet
 ![Master Database](screenshots/master-database-runs.png)
+
 *The RUNS sheet in the Bottling Master Database. Every run, every status change, every approval timestamp, and every Drive link is stored here. The database grows with every run and is immediately available for trend analysis.*
 
 ### Google Drive — Active Runs Folder
 ![Main Drive Structure](screenshots/drive-folder-structure.png)
 ![Active Run Drive Structure](screenshots/drive-folder-structure2.png)
 ![Run Folder Structure](screenshots/drive-folder-structure3.png)
+
 *The Drive folder structure created automatically on run creation. Each run gets its own named subfolder containing the Bottling Report and a Supporting Documents folder. On completion, the folder moves to Completed Runs automatically.*
 
 ### Apps Script Trigger Management
 ![Trigger Management](screenshots/apps-script-triggers.png)
+
 *The Apps Script Triggers panel showing a live hourly trigger for an active production session. The trigger is created when production starts and deleted automatically when the session ends.*
 
 ---
