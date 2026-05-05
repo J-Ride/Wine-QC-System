@@ -104,7 +104,7 @@ New Run Created (web form)
 ### Check Form — Day Of Check (Split-Submission)
 | Operator Form | Lab Form |
 |---|---|
-| ![Day Of Check Operator](screenshots/day-of-check-form.png) | ![Day Of Check Lab](screenshots/day-of-check-lab.png) |
+| ![Day Of Check Operator](screenshots/day-of-check-form.png) | ![Day Of Check Lab](screenshots/day-of-check-form-lab.png) |
 
 *The Day-of-Bottling check uses a split-submission pattern. The operator and lab tech each receive a separate form link showing only their fields. Both submissions merge into one database row — the row is marked complete only when both have submitted.*
 
@@ -139,9 +139,9 @@ New Run Created (web form)
 *The RUNS sheet in the Bottling Master Database. Every run, every status change, every approval timestamp, and every Drive link is stored here. The database grows with every run and is immediately available for trend analysis.*
 
 ### Google Drive — Active Runs Folder
-![Main Drive Structure](screenshots/drive-folder-structure.png)
-![Active Run Drive Structure](screenshots/drive-folder-structure2.png)
-![Run Folder Structure](screenshots/drive-folder-structure3.png)
+| Main Folder | Active Runs | Run Folder |
+|---|---|---|
+| ![Main Drive Structure](screenshots/drive-folder-structure.png) | ![Active Run Drive Structure](screenshots/drive-folder-structure2.png) | ![Run Folder Structure](screenshots/drive-folder-structure3.png) |
 
 *The Drive folder structure created automatically on run creation. Each run gets its own named subfolder containing the Bottling Report and a Supporting Documents folder. On completion, the folder moves to Completed Runs automatically.*
 
