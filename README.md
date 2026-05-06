@@ -12,14 +12,14 @@ A full-stack Google Workspace automation that replaced a manual paper-based bott
 ## Demo
 
 [![Watch the Demo](https://img.youtube.com/vi/Ilz1OeemCuE/maxresdefault.jpg)](https://www.youtube.com/watch?v=Ilz1OeemCuE)
-*Click to watch the full walkthrough — run creation, approval workflow, production checks, and automated reporting.*
+*Click to watch the full walkthrough - run creation, approval workflow, production checks, and automated reporting.*
 
 ---
 
 ## Dashboard Overview
 
 ![Kanban Dashboard](screenshots/dashboard-overview.png)
-*The Kanban dashboard showing bottling runs distributed across five status columns — Active, Pending Approval, Approved, In Production, and Completed.*
+*The Kanban dashboard showing bottling runs distributed across five status columns - Active, Pending Approval, Approved, In Production, and Completed.*
 
 ---
 
